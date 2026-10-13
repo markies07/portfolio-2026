@@ -1,4 +1,5 @@
 import { PERSON, SOCIALS, NAV_LINKS } from "@/lib/content";
+import FitName from "./FitName";
 
 export default function Footer() {
   return (
@@ -6,23 +7,10 @@ export default function Footer() {
       <div className="mx-auto max-w-[1600px] px-5 sm:px-8 lg:px-12 xl:px-16">
         <a
           href="#top"
-          className="block select-none w-full overflow-visible"
+          aria-label={`${PERSON.name} — back to top`}
+          className="block text-paper transition-opacity duration-300 hover:opacity-80"
         >
-          <svg
-            viewBox="0 0 1200 100"
-            className="w-full h-auto block overflow-visible"
-            aria-label={PERSON.name}
-          >
-            <text
-              x="0"
-              y="78"
-              textLength="1200"
-              lengthAdjust="spacingAndGlyphs"
-              className="font-display font-semibold fill-paper text-[88px] uppercase transition-opacity duration-300 hover:opacity-80"
-            >
-              {PERSON.name}
-            </text>
-          </svg>
+          <FitName text={PERSON.name} reveal="inView" />
         </a>
 
         {/* Desktop Single Row / Mobile Stacked Navigation */}

@@ -5,11 +5,15 @@ export const PERSON = {
   firstLine: "MARK CHRISTIAN NAVAL",
   secondLine: "",
   initials: "MCN",
-  roles: "Full-Stack Developer — AI Prompt Engineer — Web Architect",
+  roles: "Full-Stack Web Developer — AI-Powered Workflow",
+  intro:
+    "I design and build websites and web apps that look great, load fast, and are easy for anyone to use — with AI built into my process so you get better results, sooner.",
   location: "Cavite, Philippines",
   email: "markchristiannaval07@gmail.com",
   year: "2026",
   availability: "Available for select projects",
+  // Drop a photo in /public and set its path here (e.g. "/portrait.jpg").
+  portrait: null,
 };
 
 export const SOCIALS = [
@@ -30,37 +34,43 @@ export const SERVICES = [
     index: "01",
     title: "Full-Stack Web Development",
     description:
-      "End-to-end web applications built with modern frameworks — databases, APIs, server logic, and performant user interfaces engineered as a single system.",
+      "I build complete websites and web apps from start to finish — the part your visitors see and the behind-the-scenes engine that keeps everything running. You get one finished product that simply works.",
+    highlights: ["Business websites", "Custom web apps", "Online stores", "Admin dashboards"],
   },
   {
     index: "02",
-    title: "AI Prompt Engineering & Workflows",
+    title: "AI-Powered Workflow",
     description:
-      "Advanced prompt design and agentic workflows using top-tier LLMs (Claude Opus, Sonnet, Gemini Flash, GPT-4o) to automate complex tasks and build AI-driven solutions.",
+      "AI is part of how I work every day. It helps me deliver faster, catch mistakes earlier, and add smart features to your project — while I stay in charge of the quality and the details.",
+    highlights: ["Faster turnaround", "Fewer errors", "Smart features", "Automated routine tasks"],
   },
   {
     index: "03",
-    title: "Front-End Engineering",
+    title: "Responsive Websites",
     description:
-      "Responsive, accessible, and ultra-fast user interfaces crafted with modern React, Next.js, and Tailwind CSS.",
+      "Websites that look sharp and feel smooth on every screen — phone, tablet, or desktop. Quick to load, easy to find your way around, and designed to keep visitors interested.",
+    highlights: ["Mobile-friendly", "Fast loading", "Easy to navigate", "Works for everyone"],
   },
   {
     index: "04",
-    title: "Backend Architecture & APIs",
+    title: "Accounts, Data & Security",
     description:
-      "Robust backend services, Firebase/SQL database architectures, authentication flows, and REST APIs built for scale and security.",
+      "Everything that happens behind the scenes: sign-ups and logins, saving and organizing your information, and keeping it all safe and reliable as your business grows.",
+    highlights: ["User accounts", "Secure logins", "Organized data", "Ready to grow"],
   },
   {
     index: "05",
-    title: "UI/UX Web Design",
+    title: "UI/UX Design",
     description:
-      "Intuitive digital interfaces engineered with clean visual hierarchy, dark mode aesthetics, and responsive layout systems.",
+      "Clean, easy-to-understand designs that make it obvious what to do next. I plan every page around your visitors, so they find what they need without having to think twice.",
+    highlights: ["Page layouts", "Clickable prototypes", "Consistent branding", "Simple user journeys"],
   },
   {
     index: "06",
     title: "Graphic Design & Video Editing",
     description:
-      "Brand identity visuals, promotional graphic design, video editing, and motion post-production content engineered to elevate digital brand presence.",
+      "Eye-catching graphics and polished videos for your brand — from logos and social media posts to promotional clips — so everything you share looks professional and on-brand.",
+    highlights: ["Logos & branding", "Social media graphics", "Promo videos", "Video editing"],
   },
 ];
 
@@ -69,9 +79,9 @@ export const PROJECTS = [
     index: "01",
     title: "HomePaws",
     year: "2025",
-    category: "Full-Stack Web Development & AI Workflow",
+    category: "Pet Adoption Platform",
     description:
-      "A pet-adoption platform with built-in social features — browse or post adoptable pets, filter by type, get notified, and connect through a community feed, all in one responsive experience.",
+      "A pet adoption website with a friendly community built in. People can browse pets looking for a home, post their own, get notified about new matches, and connect with other pet lovers — all in one place.",
     stack: ["React", "Firebase", "Tailwind CSS"],
     href: "https://github.com/markies07/HomePaws",
     cta: "View on GitHub",
@@ -80,9 +90,9 @@ export const PROJECTS = [
     index: "02",
     title: "Clockin",
     year: "2026",
-    category: "Full-Stack Next.js Application",
+    category: "Attendance & Time Tracking",
     description:
-      "A real-time employee attendance and time-tracking platform — clock in and out, monitor work hours, and manage schedules through a clean, dashboard-driven interface built for teams of any size.",
+      "An easy way for teams to track work hours. Employees clock in and out with a single tap, while managers see attendance and schedules at a glance on one simple dashboard.",
     stack: ["Next.js", "TypeScript", "Firebase", "Tailwind CSS"],
     href: "https://github.com/markies07/Clockin",
     cta: "View on GitHub",
@@ -92,9 +102,9 @@ export const PROJECTS = [
     index: "03",
     title: "Tomodachi",
     year: "2024",
-    category: "Full-Stack Web Application",
+    category: "Local Job Board",
     description:
-      "A job-recruitment platform connecting applicants in Cavite with local employers — browse listings, review requirements, and apply online through a clean, guided flow.",
+      "A job board that connects people in Cavite with local employers. Job seekers can browse openings, see what each role needs, and apply online in just a few easy steps.",
     stack: ["React", "PHP", "MySQL"],
     href: "https://github.com/markies07/Tomodachi",
     cta: "View on GitHub",
@@ -103,9 +113,9 @@ export const PROJECTS = [
     index: "04",
     title: "KIX",
     year: "2024",
-    category: "Web Application Design",
+    category: "Online Store Concept",
     description:
-      "An e-commerce concept exploring a faster, more editorial approach to product browsing and checkout, designed and prototyped as a standalone UI/UX case study.",
+      "A sneaker shop concept designed to make browsing and buying shoes quicker and more enjoyable — planned and designed from scratch as a design case study.",
     stack: ["Figma", "React"],
     href: null,
     cta: "Design Concept",
@@ -114,36 +124,17 @@ export const PROJECTS = [
 
 export const ABOUT = {
   statement:
-    "FULL-STACK DEVELOPER & AI PROMPT ENGINEER BUILDING INTELLIGENT WEB PRODUCTS.",
-  paragraph:
-    "I'm a full-stack web developer and AI prompt engineer specializing in modern web applications and AI prompt architectures. I leverage state-of-the-art AI models like Claude 3.5 Opus, Claude 3.7 Sonnet, Gemini Flash, GPT-4o, and DeepSeek to accelerate development and automate workflows. In addition to software engineering, I bring strong creative skills in graphic design and video editing to deliver complete multimedia web experiences.",
+    "I build websites and web apps that look great, work fast, and help your business grow.",
+  paragraphs: [
+    "Hi, I'm Mark — a full-stack web developer from Cavite, Philippines. Put simply, I take care of everything it takes to bring a website to life: the design you see, the buttons and features you click, and the behind-the-scenes system that keeps it all running smoothly.",
+    "I've also made AI a natural part of how I work. It helps me move faster, spot problems earlier, and spend more time on what really matters — building something you'll be proud to share. On top of development, I do graphic design and video editing, so your brand looks polished everywhere it shows up.",
+  ],
   facts: [
     { label: "Based in", value: "Cavite, Philippines" },
-    {
-      label: "Focus",
-      value: "Full-Stack Dev, AI Prompting, Graphic Design, Video Editing",
-    },
-    { label: "Currently", value: "Open for select freelance & dev projects" },
+    { label: "What I do", value: "Websites, Web Apps, Design & Video" },
+    { label: "Currently", value: "Open to new projects" },
   ],
-  disciplines: ["Full-Stack Dev", "AI Prompting", "Graphic Design", "Video Editing"],
 };
-
-export const SKILLS = [
-  { name: "React", abbr: "R" },
-  { name: "Next.js", abbr: "NXT" },
-  { name: "TypeScript", abbr: "TS" },
-  { name: "JavaScript", abbr: "JS" },
-  { name: "Tailwind CSS", abbr: "TW" },
-  { name: "Firebase", abbr: "FB" },
-  { name: "Node.js", abbr: "N" },
-  { name: "MySQL", abbr: "SQL" },
-  { name: "PHP", abbr: "PHP" },
-  { name: "Figma", abbr: "Fg" },
-  { name: "Graphic Design", abbr: "GD" },
-  { name: "Video Editing", abbr: "VE" },
-  { name: "Git", abbr: "Git" },
-  { name: "GitHub", abbr: "GH" },
-];
 
 export const TESTIMONIALS = [
   {

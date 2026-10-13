@@ -1,19 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  motion,
+  AnimatePresence,
+  animate,
+  useAnimationControls,
+  useMotionValue,
+  useTransform,
+} from "framer-motion";
 import { NAV_LINKS } from "@/lib/content";
 import { EASE_OUT } from "@/lib/motion";
+import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 
 const SECTION_IDS = NAV_LINKS.map((link) => link.href.slice(1));
 
-// iOS fluid spring physics curve
-const WATER_SPRING = {
-  type: "spring",
-  stiffness: 420,
-  damping: 26,
-  mass: 0.6,
-};
+const ITEM = 40; // px — icon button size
+const PAD = 6; // px — capsule padding (p-1.5)
+
+// Water-drop travel: the edge leading the move snaps ahead, the trailing
+// edge lags behind on a softer spring — the pill stretches, then settles.
+const LEAD = { type: "spring", stiffness: 430, damping: 25, mass: 0.7 };
+const TRAIL = { type: "spring", stiffness: 150, damping: 19, mass: 0.95 };
 
 // Icon components for each section
 const ICONS = {
@@ -40,15 +48,44 @@ const ICONS = {
 };
 
 export default function BottomNav() {
+  const prefersReduced = useSafeReducedMotion();
   const [active, setActive] = useState(SECTION_IDS[0]);
   const [hovered, setHovered] = useState(null);
+  const [pressed, setPressed] = useState(false);
+  const [ripple, setRipple] = useState(null);
 
+  const trackRef = useRef(null);
+  const itemRefs = useRef({});
+  const activeRef = useRef(active);
+  const locked = useRef(false);
+  const lockTimer = useRef(0);
+  const rippleCount = useRef(0);
+  const placed = useRef(false);
+
+  // The droplet is described by its left and right edges so each edge can
+  // chase its target on its own spring.
+  const left = useMotionValue(PAD);
+  const right = useMotionValue(PAD + ITEM);
+  const width = useTransform([left, right], ([l, r]) => Math.max(r - l, ITEM));
+  // Stretching thins the drop a little, like surface tension
+  const scaleY = useTransform(width, (w) => 1 - (Math.min(Math.max(w - ITEM, 0), 80) / 80) * 0.2);
+  const jelly = useAnimationControls();
+
+  const measure = useCallback(() => {
+    const el = itemRefs.current[activeRef.current];
+    if (!el) return null;
+    return { l: el.offsetLeft, r: el.offsetLeft + el.offsetWidth };
+  }, []);
+
+  /* Which section is on screen */
   useEffect(() => {
     const sections = SECTION_IDS.map((id) => document.getElementById(id)).filter(Boolean);
     if (sections.length === 0) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
+        // After a tap, ignore the sections we scroll *through* on the way
+        if (locked.current) return;
         entries.forEach((entry) => {
           if (entry.isIntersecting) setActive(entry.target.id);
         });
@@ -60,30 +97,113 @@ export default function BottomNav() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => () => clearTimeout(lockTimer.current), []);
+
+  /* Glide the droplet to the active item */
+  useLayoutEffect(() => {
+    activeRef.current = active;
+    const target = measure();
+    if (!target) return;
+
+    if (!placed.current || prefersReduced) {
+      placed.current = true;
+      left.set(target.l);
+      right.set(target.r);
+      return;
+    }
+
+    if (Math.abs(target.l - left.get()) < 0.5) return;
+
+    const movingRight = target.l > left.get();
+    const controls = [
+      animate(left, target.l, movingRight ? TRAIL : LEAD),
+      animate(right, target.r, movingRight ? LEAD : TRAIL),
+    ];
+    // The whole glass capsule wobbles as the drop passes through it
+    jelly.start({
+      scaleX: [1, 1.055, 0.985, 1],
+      scaleY: [1, 0.94, 1.02, 1],
+      transition: { duration: 0.75, ease: "easeOut" },
+    });
+    return () => controls.forEach((c) => c.stop());
+  }, [active, prefersReduced, left, right, jelly, measure]);
+
+  /* Keep the droplet glued to its item when the layout changes size */
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      const target = measure();
+      if (!target) return;
+      left.set(target.l);
+      right.set(target.r);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [measure, left, right]);
+
+  const hoveredIndex = hovered ? SECTION_IDS.indexOf(hovered) : -1;
+
+  function handleTap(id) {
+    locked.current = true;
+    clearTimeout(lockTimer.current);
+    lockTimer.current = setTimeout(() => {
+      locked.current = false;
+    }, 1200);
+    rippleCount.current += 1;
+    setActive(id);
+    setRipple({ id, key: rippleCount.current });
+  }
+
   return (
     <motion.nav
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.4, ease: EASE_OUT }}
+      initial={{ opacity: 0, y: 36, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.5 }}
       className="fixed bottom-6 sm:bottom-8 inset-x-0 z-65 flex justify-center px-4 pointer-events-none"
       aria-label="Primary"
     >
-      <div className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.08] backdrop-blur-2xl p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]">
-        {NAV_LINKS.map((link) => {
+      <motion.div
+        ref={trackRef}
+        animate={jelly}
+        className="pointer-events-auto relative flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.08] backdrop-blur-2xl p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]"
+      >
+        {/* Liquid droplet — sits under the icons and travels between them */}
+        <motion.span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-0 top-1.5 z-0 h-10 overflow-hidden rounded-full border border-white/35 bg-white/25 shadow-[0_4px_18px_rgba(255,255,255,0.22),inset_0_1.5px_2px_rgba(255,255,255,0.55)] backdrop-blur-xl"
+          style={{ x: left, width, scaleY }}
+          animate={{ scale: pressed ? 0.88 : 1 }}
+          transition={{ type: "spring", stiffness: 520, damping: 20 }}
+        >
+          {/* Specular highlight */}
+          <span className="absolute inset-x-2.5 top-[3px] h-[9px] rounded-full bg-gradient-to-b from-white/55 to-transparent" />
+        </motion.span>
+
+        {NAV_LINKS.map((link, index) => {
           const id = link.href.slice(1);
           const isActive = active === id;
           const isHovered = hovered === id;
+          const distance = hoveredIndex < 0 ? 9 : Math.abs(index - hoveredIndex);
+          // Water-lens magnification around the pointer
+          const iconScale = isActive && pressed ? 0.85 : distance === 0 ? 1.3 : distance === 1 ? 1.1 : 1;
 
           return (
-            <div key={link.href} className="relative flex items-center justify-center">
+            <div
+              key={link.href}
+              ref={(el) => {
+                itemRefs.current[id] = el;
+              }}
+              className="relative z-10 flex items-center justify-center"
+            >
               {/* Tooltip on hover */}
               <AnimatePresence>
                 {isHovered && (
                   <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                    initial={{ opacity: 0, y: 8, scale: 0.85 }}
                     animate={{ opacity: 1, y: -6, scale: 1 }}
                     exit={{ opacity: 0, y: 4, scale: 0.9 }}
-                    transition={{ duration: 0.15, ease: EASE_OUT }}
+                    transition={{ type: "spring", stiffness: 500, damping: 24 }}
                     className="absolute bottom-full mb-2 pointer-events-none rounded-xl border border-white/20 bg-[#1a1a1e]/90 backdrop-blur-md px-3 py-1 font-mono text-[10px] uppercase tracking-[0.15em] text-white shadow-[0_8px_24px_rgba(0,0,0,0.6)] whitespace-nowrap z-50"
                   >
                     {link.label}
@@ -92,36 +212,48 @@ export default function BottomNav() {
                 )}
               </AnimatePresence>
 
-              <motion.a
+              <a
                 href={link.href}
-                whileTap={{ scale: 0.9 }}
-                onMouseEnter={() => setHovered(id)}
-                onMouseLeave={() => setHovered(null)}
+                onClick={() => handleTap(id)}
+                onPointerDown={() => setPressed(true)}
+                onPointerUp={() => setPressed(false)}
+                onPointerLeave={() => {
+                  setPressed(false);
+                  setHovered(null);
+                }}
+                onPointerEnter={() => setHovered(id)}
+                onFocus={() => setHovered(id)}
+                onBlur={() => setHovered(null)}
                 className={`relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300 ${
-                  isActive
-                    ? "text-white"
-                    : "text-white/40 hover:text-white/80"
+                  isActive ? "text-white" : "text-white/45 hover:text-white"
                 }`}
                 aria-label={link.label}
+                aria-current={isActive ? "true" : undefined}
               >
-                {/* iOS Fluid Water Glass Active Pill */}
-                {isActive && (
-                  <motion.span
-                    layoutId="dock-active-bg"
-                    className="absolute inset-0 rounded-full border border-white/35 bg-white/25 shadow-[0_4px_16px_rgba(255,255,255,0.2),inset_0_1.5px_2px_rgba(255,255,255,0.5)] backdrop-blur-xl"
-                    transition={WATER_SPRING}
-                  />
-                )}
-
-                {/* Animated Vector Icon */}
                 <motion.span
-                  animate={isActive ? { scale: [0.85, 1.15, 1], y: [1, -1, 0] } : { scale: 1, y: 0 }}
-                  transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
+                  animate={{ scale: iconScale }}
+                  transition={{ type: "spring", stiffness: 420, damping: 16 }}
                   className="relative z-10"
                 >
                   {ICONS[id]}
                 </motion.span>
-              </motion.a>
+
+                {/* Water ripple on tap */}
+                <AnimatePresence>
+                  {ripple?.id === id && (
+                    <motion.span
+                      key={ripple.key}
+                      aria-hidden="true"
+                      initial={{ scale: 0.4, opacity: 0.7 }}
+                      animate={{ scale: 2.3, opacity: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.75, ease: EASE_OUT }}
+                      onAnimationComplete={() => setRipple(null)}
+                      className="pointer-events-none absolute inset-0 rounded-full border border-white/60"
+                    />
+                  )}
+                </AnimatePresence>
+              </a>
             </div>
           );
         })}
@@ -129,15 +261,15 @@ export default function BottomNav() {
         {/* Glass Divider */}
         <div className="h-4 w-px bg-white/20 mx-0.5" />
 
-        {/* iOS Glass CTA Button "Let's Talk" */}
+        {/* Glass CTA Button "Let's Talk" */}
         <div className="relative flex items-center justify-center">
           <AnimatePresence>
             {hovered === "cta" && (
               <motion.div
-                initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                initial={{ opacity: 0, y: 8, scale: 0.85 }}
                 animate={{ opacity: 1, y: -6, scale: 1 }}
                 exit={{ opacity: 0, y: 4, scale: 0.9 }}
-                transition={{ duration: 0.15, ease: EASE_OUT }}
+                transition={{ type: "spring", stiffness: 500, damping: 24 }}
                 className="absolute bottom-full mb-2 pointer-events-none rounded-xl border border-white/20 bg-white px-3 py-1 font-mono text-[10px] uppercase tracking-[0.15em] text-ink shadow-lg whitespace-nowrap z-50"
               >
                 Let&apos;s Talk
@@ -148,10 +280,13 @@ export default function BottomNav() {
 
           <motion.a
             href="#contact"
-            whileTap={{ scale: 0.94 }}
-            onMouseEnter={() => setHovered("cta")}
-            onMouseLeave={() => setHovered(null)}
-            className="group relative flex h-10 items-center gap-2 rounded-full border border-white/20 bg-transparent px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-paper transition-all duration-300 hover:bg-paper hover:text-ink hover:border-paper hover:shadow-[0_0_20px_rgba(244,244,240,0.35)]"
+            onClick={() => handleTap("contact")}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.92 }}
+            transition={{ type: "spring", stiffness: 500, damping: 18 }}
+            onPointerEnter={() => setHovered("cta")}
+            onPointerLeave={() => setHovered(null)}
+            className="group relative flex h-10 items-center gap-2 rounded-full border border-white/20 bg-transparent px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-paper transition-colors duration-300 hover:bg-paper hover:text-ink hover:border-paper hover:shadow-[0_0_20px_rgba(244,244,240,0.35)]"
           >
             <span className="hidden sm:inline">Let&apos;s Talk</span>
             <svg
@@ -165,7 +300,7 @@ export default function BottomNav() {
             </svg>
           </motion.a>
         </div>
-      </div>
+      </motion.div>
     </motion.nav>
   );
 }

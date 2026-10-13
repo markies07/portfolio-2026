@@ -1,8 +1,9 @@
-import { Plus_Jakarta_Sans, Inter, JetBrains_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter, JetBrains_Mono, Instrument_Sans } from "next/font/google";
+import "lenis/dist/lenis.css";
 import "./globals.css";
 import { CursorProvider } from "@/lib/cursor-context";
 import CustomCursor from "@/components/CustomCursor";
-import ScrollProgress from "@/components/ScrollProgress";
+import SmoothScroll from "@/components/SmoothScroll";
 import { PERSON } from "@/lib/content";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -23,15 +24,24 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
+// Refined neo-grotesque for the oversized name (hero + footer).
+const instrumentSans = Instrument_Sans({
+  variable: "--font-name",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const TITLE = `${PERSON.name} — Full-Stack Web Developer`;
+const DESCRIPTION =
+  "Mark Christian Naval is a full-stack web developer from Cavite, Philippines who builds fast, beautiful, easy-to-use websites and web apps — with AI built into the workflow.";
+
 export const metadata = {
-  title: `${PERSON.name} — Full-Stack Developer & AI Prompt Engineer`,
-  description:
-    "Portfolio of Mark Christian Naval — Full-Stack Web Developer and AI Prompt Engineer based in Cavite, Philippines.",
+  title: TITLE,
+  description: DESCRIPTION,
   metadataBase: new URL("https://markchristian.vercel.app"),
   openGraph: {
-    title: `${PERSON.name} — Full-Stack Developer & AI Prompt Engineer`,
-    description:
-      "Portfolio of Mark Christian Naval — Full-Stack Web Developer and AI Prompt Engineer based in Cavite, Philippines.",
+    title: TITLE,
+    description: DESCRIPTION,
     type: "website",
   },
 };
@@ -40,12 +50,12 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${plusJakartaSans.variable} ${inter.variable} ${jetbrains.variable}`}
+      className={`${plusJakartaSans.variable} ${inter.variable} ${jetbrains.variable} ${instrumentSans.variable}`}
     >
       <body className="bg-ink text-paper">
         <CursorProvider>
+          <SmoothScroll />
           <div className="grain-overlay" aria-hidden="true" />
-          <ScrollProgress />
           <CustomCursor />
           {children}
         </CursorProvider>

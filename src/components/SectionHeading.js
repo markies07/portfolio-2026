@@ -1,6 +1,7 @@
 "use client";
 
 import ScrollReveal from "./ScrollReveal";
+import Parallax from "./Parallax";
 
 /**
  * Large editorial section heading: small tracked eyebrow + oversized title.
@@ -17,8 +18,9 @@ export default function SectionHeading({
   const titleColor = tone === "light" ? "text-paper" : "text-ink";
 
   return (
+    <Parallax from={70} to={-70} className={className}>
     <div
-      className={`${align === "center" ? "text-center mx-auto" : "text-left"} ${className}`}
+      className={align === "center" ? "text-center mx-auto" : "text-left"}
     >
       {eyebrow && (
         <ScrollReveal delay={0}>
@@ -35,5 +37,6 @@ export default function SectionHeading({
         </h2>
       </ScrollReveal>
     </div>
+    </Parallax>
   );
 }
