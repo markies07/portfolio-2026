@@ -118,7 +118,7 @@ export default function Services() {
 
   return (
     <section id="services" className="relative bg-ink py-28 sm:py-36 lg:py-44">
-      <div className="mx-auto max-w-[1600px] px-5 sm:px-8 lg:px-12 xl:px-16">
+      <div className="mx-auto max-w-[100rem] px-5 sm:px-8 lg:px-12 xl:px-16">
         <SectionHeading eyebrow="What I Do" title="Services" className="mb-16 sm:mb-24" />
 
         <div className="border-t border-paper/10">

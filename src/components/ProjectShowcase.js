@@ -5,13 +5,13 @@ import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 import ScrollReveal from "./ScrollReveal";
-import Parallax from "./Parallax";
 import MagneticButton from "./MagneticButton";
 import ArrowIcon from "./ArrowIcon";
 
 /**
- * Gallery frame: a plain rectangle. Real screenshots drift slightly inside
- * the frame as the page scrolls (parallax) and zoom gently on hover.
+ * Gallery frame: a plain, square-cornered rectangle. Project artwork drifts
+ * slightly inside the frame as the page scrolls (parallax) and zooms gently
+ * on hover.
  */
 function GalleryImage({ project }) {
   const ref = useRef(null);
@@ -22,7 +22,7 @@ function GalleryImage({ project }) {
   return (
     <div
       ref={ref}
-      className="relative aspect-4/3 w-full overflow-hidden rounded-2xl border border-paper/10 bg-paper/4"
+      className="relative aspect-4/3 w-full overflow-hidden border border-paper/10 bg-paper/4"
     >
       {project.image && (
         <motion.div
@@ -34,7 +34,8 @@ function GalleryImage({ project }) {
               src={project.image}
               alt={`${project.title} preview`}
               fill
-              className="object-cover object-top"
+              // Black and white until the card is hovered (or its link focused)
+              className="object-cover object-top grayscale transition-[filter] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:grayscale-0 group-focus-within:grayscale-0"
               sizes="(max-width: 768px) 100vw, 50vw"
             />
           </div>
@@ -44,13 +45,10 @@ function GalleryImage({ project }) {
   );
 }
 
-export default function ProjectShowcase({ project, delay = 0, column = 0 }) {
-  // Left column drifts gently, right column drifts much more — the two
-  // visibly slide past each other as you scroll
-  const [from, to] = column === 0 ? [30, -30] : [140, -140];
-
+export default function ProjectShowcase({ project, delay = 0 }) {
+  // Column-level parallax lives in Work — per-card offsets pulled cards in
+  // the same column apart as they scrolled through at different progress
   return (
-    <Parallax from={from} to={to} mobileFactor={0.3}>
     <ScrollReveal className="group" delay={delay} y={40} amount={0.2}>
       <GalleryImage project={project} />
 
@@ -76,25 +74,25 @@ export default function ProjectShowcase({ project, delay = 0, column = 0 }) {
           ))}
         </ul>
 
-        {project.href ? (
+        {/* The repo when it's public, otherwise the live site */}
+        {project.links?.repo || project.links?.live ? (
           <MagneticButton
             as="a"
-            href={project.href}
+            href={project.links.repo || project.links.live}
             target="_blank"
             rel="noopener noreferrer"
             cursorLabel="View"
             className="group/cta inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-paper"
           >
-            {project.cta}
+            {project.links.repo ? "View on GitHub" : "Visit website"}
             <ArrowIcon className="h-4 w-4 transition-transform duration-300 group-hover/cta:translate-x-1" />
           </MagneticButton>
         ) : (
           <span className="inline-flex items-center gap-2 rounded-full border border-paper/20 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.2em] text-paper/50">
-            {project.cta}
+            Private project
           </span>
         )}
       </div>
     </ScrollReveal>
-    </Parallax>
   );
 }

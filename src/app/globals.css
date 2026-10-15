@@ -37,6 +37,19 @@ body {
   overflow-x: clip;
 }
 
+/* Everything ~10% smaller from tablet width up, so more of each section
+   fits on screen. Done through the root font size: every rem-based size
+   (type, spacing, buttons, widths) scales together, while the page still
+   fills the window and pointer/scroll coordinates stay 1:1. CSS `zoom` was
+   tried first and broke all three. Media queries are unaffected — they
+   resolve rem against the browser default, not this value. Phones keep
+   100%: those sizes are already tuned, and smaller tap targets would hurt. */
+@media (min-width: 640px) {
+  html {
+    font-size: 90%;
+  }
+}
+
 body {
   background: var(--color-ink);
   color: var(--color-paper);
@@ -50,11 +63,13 @@ body {
   color: var(--color-paper);
 }
 
-/* Custom cursor: only enabled once JS confirms a fine pointer + motion is allowed */
+/* Custom cursor: only enabled once JS confirms a fine pointer + motion is
+   allowed. Hides every native cursor (text I-beam on fields, the 3D stage's
+   grab hand set inline on <body> — hence !important) so only the custom one
+   shows; it changes shape itself for links, fields and the 3D stage. */
 .has-custom-cursor,
-.has-custom-cursor a,
-.has-custom-cursor button {
-  cursor: none;
+.has-custom-cursor * {
+  cursor: none !important;
 }
 
 :focus-visible:not(input):not(textarea) {
@@ -118,6 +133,90 @@ textarea:focus-visible {
   font-size: calc(100cqw / var(--fit-em, 11.659));
 }
 
+/* Terminal intro. The gate script marks <html data-intro="skip"> before first
+   paint when it shouldn't play; until it finishes (data-intro="done") the
+   page can't scroll. The gutter is reserved throughout so the scrollbar
+   coming back doesn't nudge the layout sideways. */
+html {
+  scrollbar-gutter: stable;
+}
+
+html:not([data-intro]) {
+  overflow: hidden;
+}
+
+html[data-intro="skip"] .intro-overlay {
+  display: none;
+}
+
+.intro-caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.15em;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background: var(--color-paper);
+  animation: intro-blink 1s steps(1) infinite;
+}
+
+@keyframes intro-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Hero cut-out portrait. --w sets its width, --h follows the image's aspect
+   (920 × 861). On portrait screens (phones, upright tablets) it sits in the
+   flow under the name, its hair overlapping the bottom of the letters by
+   --overlap of its height; on landscape screens it is centred on the name,
+   with the name's centre line crossing the portrait --at of the way down
+   (just below the eyes). */
+.hero-portrait {
+  --w: min(118vw, 62svh);
+  --h: calc(var(--w) * 0.9359);
+  --overlap: 0.075;
+  position: relative;
+  left: 50%;
+  translate: -50% 0;
+  width: var(--w);
+  flex-shrink: 0;
+  margin-top: calc(var(--h) * var(--overlap) * -1);
+  margin-bottom: calc(var(--h) * -0.2);
+}
+
+@media (min-width: 640px) and (orientation: landscape) {
+  .hero-portrait {
+    --w: min(82svh, 70vw);
+    --at: 0.33;
+    position: absolute;
+    top: calc(50% - var(--h) * var(--at));
+    margin: 0;
+  }
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+  .hero-portrait {
+    --w: min(88svh, 58vw);
+    --at: 0.34;
+  }
+}
+
+/* Torso dissolves into the page; the shadow is what the portrait casts on
+   the letters behind it, which sells the depth */
+.hero-portrait-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 92%);
+  mask-image: linear-gradient(to bottom, #000 58%, transparent 92%);
+  filter: drop-shadow(0 0 36px rgb(0 0 0 / 0.65));
+}
+
+.hero-spotlight {
+  width: min(120vw, 110svh);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgb(244 244 240 / 0.075), rgb(244 244 240 / 0.02) 55%, transparent);
+}
+
 /* Infinite skills marquee — pure CSS, pauses on hover */
 @keyframes marquee {
   from {
@@ -149,5 +248,158 @@ textarea:focus-visible {
     background: #333;
     border: 2px solid var(--color-ink);
     border-radius: 999px;
+  }
+}
+
+/* ── Liquid glass (bottom nav) ───────────────────────────────────────────
+   Modelled on iOS Liquid Glass: a barely-blurred lens that bends the
+   content behind its rim, a specular edge light, and a tint + icon colour
+   that flip with the brightness of what's underneath (data-tone, set from
+   JS). Every colour is a variable so both tones cross-fade. */
+@layer components {
+  .liquid-glass {
+    --lg-tint: rgba(255, 255, 255, 0.07);
+    --lg-sheen: rgba(255, 255, 255, 0.1);
+    --lg-rim-strong: rgba(255, 255, 255, 0.6);
+    --lg-rim-soft: rgba(255, 255, 255, 0.1);
+    --lg-inner-glow: rgba(255, 255, 255, 0.07);
+    --lg-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25);
+
+    box-shadow: var(--lg-shadow);
+    transition: box-shadow 0.5s ease;
+  }
+
+  .liquid-glass[data-tone="light"] {
+    --lg-tint: rgba(255, 255, 255, 0.28);
+    --lg-sheen: rgba(255, 255, 255, 0.35);
+    --lg-rim-strong: rgba(255, 255, 255, 0.95);
+    --lg-rim-soft: rgba(255, 255, 255, 0.3);
+    --lg-inner-glow: rgba(255, 255, 255, 0.25);
+    --lg-shadow: 0 10px 30px rgba(0, 0, 0, 0.16), 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Content colours. The bar sets them from its overall tone; each
+     sampled icon (data-tone on the element itself) can override locally */
+  .liquid-glass,
+  .liquid-glass [data-tone="dark"] {
+    --lg-icon: rgba(244, 244, 240, 0.55);
+    --lg-icon-active: #ffffff;
+    --lg-pill: rgba(255, 255, 255, 0.16);
+    --lg-pill-rim: rgba(255, 255, 255, 0.45);
+    --lg-lens: rgba(255, 255, 255, 0.05);
+    --lg-divider: rgba(255, 255, 255, 0.18);
+    --lg-cta-border: rgba(255, 255, 255, 0.22);
+    --lg-cta-text: var(--color-paper);
+    --lg-cta-hover-bg: var(--color-paper);
+    --lg-cta-hover-text: var(--color-ink);
+  }
+
+  .liquid-glass[data-tone="light"],
+  .liquid-glass [data-tone="light"] {
+    --lg-icon: rgba(10, 10, 10, 0.55);
+    --lg-icon-active: #0a0a0a;
+    --lg-pill: rgba(10, 10, 10, 0.09);
+    --lg-pill-rim: rgba(255, 255, 255, 0.85);
+    --lg-lens: rgba(255, 255, 255, 0.15);
+    --lg-divider: rgba(10, 10, 10, 0.15);
+    --lg-cta-border: rgba(10, 10, 10, 0.18);
+    --lg-cta-text: var(--color-ink);
+    --lg-cta-hover-bg: var(--color-ink);
+    --lg-cta-hover-text: var(--color-paper);
+  }
+
+  .liquid-glass__layer {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  /* Fallback lens for browsers without SVG backdrop filters; Chromium
+     swaps this for the refraction filter inline */
+  .liquid-glass__refraction {
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(180%);
+  }
+
+  .liquid-glass__tint {
+    background:
+      linear-gradient(180deg, var(--lg-sheen), transparent 55%),
+      var(--lg-tint);
+    box-shadow:
+      inset 0 1px 0.5px var(--lg-rim-strong),
+      inset 0 -1px 0.5px var(--lg-rim-soft),
+      inset 0 0 18px var(--lg-inner-glow);
+    transition: background 0.5s ease, box-shadow 0.5s ease;
+  }
+
+  /* Specular rim: bright where "light" hits the top-left and bottom-right */
+  .liquid-glass__rim {
+    padding: 1px;
+    background: linear-gradient(
+      115deg,
+      var(--lg-rim-strong) 0%,
+      var(--lg-rim-soft) 18%,
+      transparent 40%,
+      transparent 62%,
+      var(--lg-rim-soft) 85%,
+      var(--lg-rim-strong) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.9;
+  }
+
+  /* Selected-item pill. At rest a soft fill; while moving or pressed it
+     swells into a clear lens (data-lifted) like the iOS tab bar */
+  .liquid-glass__drop {
+    background: var(--lg-pill);
+    box-shadow:
+      inset 0 1px 1px var(--lg-pill-rim),
+      inset 0 -1px 1px rgba(255, 255, 255, 0.08),
+      0 2px 8px rgba(0, 0, 0, 0.12);
+    transition: background-color 0.4s ease, box-shadow 0.4s ease;
+  }
+
+  .liquid-glass__drop[data-lifted="true"] {
+    background: var(--lg-lens);
+    -webkit-backdrop-filter: saturate(170%) brightness(1.12);
+    backdrop-filter: saturate(170%) brightness(1.12);
+    box-shadow:
+      inset 0 1.5px 1px var(--lg-rim-strong),
+      inset 0 -1px 1px var(--lg-rim-soft),
+      inset 0 0 10px var(--lg-inner-glow),
+      0 6px 20px rgba(0, 0, 0, 0.22);
+  }
+
+  .liquid-glass__item {
+    color: var(--lg-icon);
+    transition: color 0.35s ease;
+  }
+
+  .liquid-glass__item:hover,
+  .liquid-glass__item[aria-current="true"] {
+    color: var(--lg-icon-active);
+  }
+
+  .liquid-glass__divider {
+    background: var(--lg-divider);
+    transition: background-color 0.5s ease;
+  }
+
+  .liquid-glass__cta {
+    color: var(--lg-cta-text);
+    border: 1px solid var(--lg-cta-border);
+    transition: color 0.35s ease, background-color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+  }
+
+  .liquid-glass__cta:hover {
+    color: var(--lg-cta-hover-text);
+    background: var(--lg-cta-hover-bg);
+    border-color: transparent;
+    box-shadow: 0 0 20px rgba(244, 244, 240, 0.3);
   }
 }

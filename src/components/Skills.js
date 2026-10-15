@@ -87,20 +87,51 @@ function SkillPill({ name, color, path }) {
   );
 }
 
-export default function Skills() {
-  // Four copies so each half of the track is wider than any screen; the
-  // track slides by exactly -50% for a seamless loop.
-  const items = [...SKILLS, ...SKILLS, ...SKILLS, ...SKILLS];
+// Two rows, each with its own half of the skills, so no skill is ever on
+// screen twice. They run in opposite directions, both on their own and in
+// the scroll-linked drift. Kept slow and at the same speed (~28px/s): the
+// rows are different lengths, so the durations differ to match. Faster or
+// mismatched speeds in opposite directions are hard on the eyes.
+const ROWS = [
+  { skills: SKILLS.slice(0, 6), duration: "98s", reverse: false, drift: [0, -120] },
+  { skills: SKILLS.slice(6), duration: "78s", reverse: true, drift: [-120, 0] },
+];
 
+function MarqueeRow({ skills, duration, reverse, drift }) {
+  // Six copies so each half of the track is wider than any screen; the
+  // track slides by exactly -50% for a seamless loop. The reversed row
+  // drifts from -120 to 0 so its left edge never pulls into view.
+  const items = Array.from({ length: 6 }, () => skills).flat();
+  return (
+    <div className="marquee overflow-hidden">
+      <Parallax axis="x" from={drift[0]} to={drift[1]} mobileFactor={0.5} className="w-max">
+        <div
+          className="marquee-track flex w-max gap-3"
+          style={{ "--dur": duration, animationDirection: reverse ? "reverse" : "normal" }}
+        >
+          {items.map((skill, i) => (
+            <SkillPill key={`${skill.name}-${i}`} {...skill} />
+          ))}
+        </div>
+      </Parallax>
+    </div>
+  );
+}
+
+export default function Skills() {
   return (
     <section className="relative bg-ink py-28 sm:py-36 lg:py-44 overflow-hidden">
-      <div className="mx-auto max-w-[1600px] px-5 sm:px-8 lg:px-12 xl:px-16 mb-16 sm:mb-20">
+      <div className="mx-auto max-w-[100rem] px-5 sm:px-8 lg:px-12 xl:px-16 mb-16 sm:mb-20">
         <SectionHeading eyebrow="My Skills" title="Skills That Drive Results" />
       </div>
 
       <ScrollReveal delay={0.1}>
-        <div className="marquee relative" role="marquee" aria-label="Skills: React, Next.js, TypeScript, JavaScript, Tailwind CSS, Firebase, Node.js, MySQL, PHP, Figma, Git, GitHub">
-          {/* Left + right fade masks */}
+        <div
+          className="relative flex flex-col gap-3"
+          role="marquee"
+          aria-label={`Skills: ${SKILLS.map((skill) => skill.name).join(", ")}`}
+        >
+          {/* Left + right fade masks, across both rows */}
           <div
             className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 sm:w-28 z-10"
             style={{ background: "linear-gradient(to right, var(--color-ink), transparent)" }}
@@ -110,13 +141,11 @@ export default function Skills() {
             style={{ background: "linear-gradient(to left, var(--color-ink), transparent)" }}
           />
 
-          <Parallax axis="x" from={0} to={-420} mobileFactor={0.5} className="w-max">
-            <div className="marquee-track flex w-max gap-3" style={{ "--dur": "50s" }} aria-hidden="true">
-              {items.map((skill, i) => (
-                <SkillPill key={`${skill.name}-${i}`} {...skill} />
-              ))}
-            </div>
-          </Parallax>
+          <div aria-hidden="true" className="flex flex-col gap-3">
+            {ROWS.map((row, i) => (
+              <MarqueeRow key={i} {...row} />
+            ))}
+          </div>
         </div>
       </ScrollReveal>
     </section>

@@ -10,12 +10,21 @@ export const DURATION = {
   cinematic: 1.2,
 };
 
+// Hero entrance, in seconds after the intro hands off. Strict order:
+//   1. portrait fades in — it must be fully opaque before the name rises
+//      behind it, or the letters would show through it
+//   2. the name, the moment the portrait is solid, with nothing else moving
+//   3. everything else (labels, intro copy, scroll cue, bottom nav) once the
+//      name has landed
 export const heroTimeline = {
-  label: 0.2,
-  headline: 0.35,
-  name: 0.55,
-  image: 0.75,
-  supporting: 0.9,
+  image: 0.05,
+  imageFade: 0.45, // portrait reaches full opacity at image + imageFade
+  imageRise: 1.1, // the portrait's upward settle (it's already opaque)
+  name: 0.5, // = image + imageFade
+  nameRise: 0.6, // per word
+  nameStagger: 0.05,
+  details: 0.95, // name is visually settled by here
+  detailFade: 0.5,
 };
 
 export const revealTransition = (delay = 0, duration = DURATION.large) => ({

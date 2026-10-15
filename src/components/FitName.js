@@ -18,7 +18,7 @@ const wordVariants = {
  * Oversized single-line name that always spans the full width of its
  * container, at every window size, without stretching the letterforms.
  * Words rise in one after another — on mount (`reveal="mount"`) or when
- * scrolled into view (`reveal="inView"`).
+ * scrolled into view (`reveal="inView"`). `paused` holds it back either way.
  */
 export default function FitName({
   text,
@@ -27,6 +27,9 @@ export default function FitName({
   delay = 0,
   className = "",
   textClassName = "",
+  paused = false,
+  stagger = 0.09, // seconds between words
+  duration = 1, // seconds for each word to rise
 }) {
   const boxRef = useRef(null);
   const textRef = useRef(null);
@@ -58,7 +61,7 @@ export default function FitName({
     };
   }, [text]);
 
-  const play = reveal === "mount" || inView;
+  const play = !paused && (reveal === "mount" || inView);
   const words = text.split(" ");
 
   return (
@@ -70,14 +73,14 @@ export default function FitName({
         style={{ "--fit-em": fitEm }}
         initial={prefersReduced ? false : "hidden"}
         animate={prefersReduced || play ? "visible" : "hidden"}
-        transition={{ staggerChildren: 0.09, delayChildren: delay }}
+        transition={{ staggerChildren: stagger, delayChildren: delay }}
       >
         {words.map((word, i) => (
           <motion.span
             key={`${word}-${i}`}
             className="inline-block"
             variants={wordVariants}
-            transition={{ duration: 1, ease: EASE_OUT }}
+            transition={{ duration, ease: EASE_OUT }}
           >
             {word}
             {i < words.length - 1 ? " " : ""}

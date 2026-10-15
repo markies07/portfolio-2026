@@ -18,25 +18,23 @@ export default function SectionHeading({
   const titleColor = tone === "light" ? "text-paper" : "text-ink";
 
   return (
-    <Parallax from={70} to={-70} className={className}>
-    <div
-      className={align === "center" ? "text-center mx-auto" : "text-left"}
-    >
-      {eyebrow && (
-        <ScrollReveal delay={0}>
-          <p className={`font-mono text-xs sm:text-sm tracking-[0.25em] uppercase ${eyebrowColor}`}>
-            {eyebrow}
-          </p>
+    <Parallax from={40} to={-40} className={className}>
+      <div className={align === "center" ? "text-center mx-auto" : "text-left"}>
+        {eyebrow && (
+          <ScrollReveal delay={0}>
+            <p className={`font-mono text-xs sm:text-sm tracking-[0.25em] uppercase ${eyebrowColor}`}>
+              {eyebrow}
+            </p>
+          </ScrollReveal>
+        )}
+        <ScrollReveal delay={0.08} variant="mask">
+          <h2
+            className={`mt-4 font-display font-semibold leading-[0.95] tracking-tight text-[clamp(2.75rem,7vw,7rem)] ${titleColor} ${titleClassName}`}
+          >
+            {title}
+          </h2>
         </ScrollReveal>
-      )}
-      <ScrollReveal delay={0.08} variant="mask">
-        <h2
-          className={`mt-4 font-display font-semibold leading-[0.95] tracking-tight text-[clamp(2.75rem,7vw,7rem)] ${titleColor} ${titleClassName}`}
-        >
-          {title}
-        </h2>
-      </ScrollReveal>
-    </div>
+      </div>
     </Parallax>
   );
 }

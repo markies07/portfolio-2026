@@ -347,7 +347,7 @@ export default function Interactive3DPortfolio({ className = "" }) {
       style={{
         width: "100%",
         height: "100%",
-        minHeight: "440px",
+        minHeight: "27.5rem",
         touchAction: "none",
         background:
           "radial-gradient(circle at 50% 50%, rgba(139, 93, 232, 0.14) 0%, rgba(139, 93, 232, 0.03) 48%, transparent 72%)",

@@ -2,6 +2,9 @@ import { Plus_Jakarta_Sans, Inter, JetBrains_Mono, Instrument_Sans } from "next/
 import "lenis/dist/lenis.css";
 import "./globals.css";
 import { CursorProvider } from "@/lib/cursor-context";
+import { IntroProvider } from "@/lib/intro-context";
+import { INTRO_GATE_SCRIPT } from "@/lib/intro";
+import IntroTerminal from "@/components/IntroTerminal";
 import CustomCursor from "@/components/CustomCursor";
 import SmoothScroll from "@/components/SmoothScroll";
 import { PERSON } from "@/lib/content";
@@ -33,7 +36,7 @@ const instrumentSans = Instrument_Sans({
 
 const TITLE = `${PERSON.name} — Full-Stack Web Developer`;
 const DESCRIPTION =
-  "Mark Christian Naval is a full-stack web developer from Cavite, Philippines who builds fast, beautiful, easy-to-use websites and web apps — with AI built into the workflow.";
+  "Mark Christian Naval is a full-stack web developer and AI prompt engineer from Cavite, Philippines, building fast, dependable websites and web applications that help businesses grow.";
 
 export const metadata = {
   title: TITLE,
@@ -48,17 +51,31 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
+    // suppressHydrationWarning: the intro gate script sets data-intro on
+    // <html> before React hydrates
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${plusJakartaSans.variable} ${inter.variable} ${jetbrains.variable} ${instrumentSans.variable}`}
     >
       <body className="bg-ink text-paper">
-        <CursorProvider>
-          <SmoothScroll />
-          <div className="grain-overlay" aria-hidden="true" />
-          <CustomCursor />
-          {children}
-        </CursorProvider>
+        {/* Plain inline script (not next/script, which defers inline code to
+            a queue) so it runs during parsing, before the terminal below it
+            can paint */}
+        <script dangerouslySetInnerHTML={{ __html: INTRO_GATE_SCRIPT }} />
+        {/* Without JS the terminal could never finish — skip it entirely */}
+        <noscript>
+          <style>{`.intro-overlay{display:none}html{overflow:auto}`}</style>
+        </noscript>
+        <IntroProvider>
+          <CursorProvider>
+            <SmoothScroll />
+            <div className="grain-overlay" aria-hidden="true" />
+            <CustomCursor />
+            <IntroTerminal />
+            {children}
+          </CursorProvider>
+        </IntroProvider>
       </body>
     </html>
   );
