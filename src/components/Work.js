@@ -10,7 +10,7 @@ const COLUMNS = [0, 1].map((column) =>
 
 export default function Work() {
   return (
-    <section id="work" className="relative bg-ink py-28 sm:py-36 lg:py-44 overflow-hidden">
+    <section id="work" className="relative bg-ink py-28 sm:py-36 lg:py-44 overflow-clip">
       <div className="mx-auto max-w-[100rem] px-5 sm:px-8 lg:px-12 xl:px-16">
         <SectionHeading eyebrow="My Work" title="Crafted With Purpose" className="mb-16 sm:mb-24" />
 
@@ -21,7 +21,7 @@ export default function Work() {
         <div className="grid grid-cols-1 gap-y-20 sm:gap-y-24 md:grid-cols-2 md:gap-x-10 lg:gap-x-16">
           {COLUMNS.map((items, column) => {
             const cards = items.map(({ project, i }) => (
-              <div key={project.title} style={{ order: i }}>
+              <div key={project.title} id={`project-${project.slug}`} className="scroll-mt-24" style={{ order: i }}>
                 <ProjectShowcase project={project} delay={column * 0.12} />
               </div>
             ));

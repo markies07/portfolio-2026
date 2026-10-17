@@ -1,53 +1,27 @@
-"use client";
-
-import { useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
-
-function Word({ children, progress, range }) {
-  const opacity = useTransform(progress, range, [0.18, 1]);
-  return (
-    <span className="relative inline-block">
-      <motion.span style={{ opacity }}>{children}</motion.span>
-    </span>
-  );
-}
-
 /**
  * Text whose words light up one by one as it scrolls through the viewport.
+ *
+ * Pure CSS (a scroll-driven animation, see .scroll-words in globals.css):
+ * each word fades in over its own slice of the paragraph's journey, on the
+ * compositor, with no JavaScript while scrolling. Without scroll-timeline
+ * support (or with reduced motion) the words are simply fully lit.
  */
 export default function ScrollWords({ text, className = "" }) {
-  const ref = useRef(null);
-  const prefersReduced = useSafeReducedMotion();
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start 0.85", "end 0.45"],
-  });
-
   const words = text.split(" ");
 
-  if (prefersReduced) {
-    return (
-      <p ref={ref} className={className}>
-        {text}
-      </p>
-    );
-  }
-
   return (
-    <p ref={ref} className={className} aria-label={text}>
-      {words.map((word, i) => {
-        const start = i / words.length;
-        const end = start + 1 / words.length;
-        return (
-          <span key={`${word}-${i}`} aria-hidden="true">
-            <Word progress={scrollYProgress} range={[start, end]}>
-              {word}
-            </Word>
-            {i < words.length - 1 ? " " : ""}
+    <p className={`scroll-words ${className}`} aria-label={text}>
+      {words.map((word, i) => (
+        <span key={`${word}-${i}`} aria-hidden="true">
+          <span
+            className="scroll-word inline-block"
+            style={{ "--w0": `${(i / words.length) * 100}%`, "--w1": `${((i + 1) / words.length) * 100}%` }}
+          >
+            {word}
           </span>
-        );
-      })}
+          {i < words.length - 1 ? " " : ""}
+        </span>
+      ))}
     </p>
   );
 }

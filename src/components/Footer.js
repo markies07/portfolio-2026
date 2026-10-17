@@ -9,9 +9,9 @@ export default function Footer() {
         <a
           href="#top"
           aria-label={`${PERSON.name} — back to top`}
-          className="block text-paper transition-opacity duration-300 hover:opacity-80"
+          className="block text-paper"
         >
-          <FitName text={PERSON.name} reveal="inView" />
+          <FitName text={PERSON.name} reveal="inView" stack wordClassName="text-fade-down" />
         </a>
 
         {/* Desktop Single Row / Mobile Stacked Navigation */}

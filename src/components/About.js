@@ -1,23 +1,73 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { ABOUT } from "@/lib/content";
 import { useNearViewport } from "@/hooks/useNearViewport";
+import { useIntroDone } from "@/lib/intro-context";
 import SectionHeading from "./SectionHeading";
 import ScrollReveal from "./ScrollReveal";
 import ScrollWords from "./ScrollWords";
 import Parallax from "./Parallax";
 
-const Interactive3DPortfolio = dynamic(() => import("./Interactive3DPortfolio"), {
+const loadStage = () => import("./Interactive3DPortfolio");
+// The hero's entrance runs for ~2s after the intro hands off
+const HERO_SETTLE_MS = 2500;
+const Interactive3DPortfolio = dynamic(loadStage, {
   ssr: false,
   loading: () => <div className="h-full w-full" />,
 });
 
 export default function About() {
   const stageRef = useRef(null);
-  // The 3D bundle (three.js) only downloads once the section is close by
-  const showStage = useNearViewport(stageRef, "600px");
+  const near = useNearViewport(stageRef, "600px");
+  const introDone = useIntroDone();
+  // On phones About starts right under the hero, inside the "near" margin
+  // from the first paint, which used to boot the whole 3D engine during the
+  // intro. So the stage also waits for the idle preload below to finish, or
+  // for the visitor to start scrolling, whichever comes first.
+  const [allowed, setAllowed] = useState(false);
+  const showStage = near && allowed;
+
+  useEffect(() => {
+    if (!introDone || allowed) return;
+    const onScroll = () => setAllowed(true);
+    window.addEventListener("scroll", onScroll, { passive: true, once: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [introDone, allowed]);
+
+  // ...but three.js (~1 MB) is fetched, parsed and the letters built ahead
+  // of time, while the browser is idle — not mid-scroll, where doing it all
+  // at once stalled the page on slower devices. It waits for the hero's
+  // entrance to finish first, so parsing it can't stutter that either.
+  useEffect(() => {
+    if (!introDone) return;
+    const idle = window.requestIdleCallback ?? ((cb) => setTimeout(cb, 300));
+    const cancel = window.cancelIdleCallback ?? clearTimeout;
+    let handle = 0;
+    let warm = 0;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      handle = idle(
+        () => {
+          loadStage().then((stage) => {
+            if (cancelled) return;
+            warm = idle(() => {
+              stage.warmup?.();
+              setAllowed(true);
+            }, { timeout: 3000 });
+          });
+        },
+        { timeout: 4000 }
+      );
+    }, HERO_SETTLE_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      if (handle) cancel(handle);
+      if (warm) cancel(warm);
+    };
+  }, [introDone]);
 
   return (
     <section id="about" className="relative bg-ink text-paper py-28 sm:py-36 lg:py-44">

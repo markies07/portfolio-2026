@@ -1,13 +1,37 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import { EASE_OUT } from "@/lib/motion";
-import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
+import { useEffect, useRef } from "react";
+
+// One IntersectionObserver per threshold, shared by every reveal on the page
+const observers = new Map();
+
+function observe(el, amount) {
+  let observer = observers.get(amount);
+  if (!observer) {
+    observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.dataset.revealed = "";
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: amount }
+    );
+    observers.set(amount, observer);
+  }
+  observer.observe(el);
+  return () => observer.unobserve(el);
+}
 
 /**
- * Generic scroll-triggered reveal. Fires once, respects reduced-motion.
- * variant: "fade" (default fade+translateY) | "mask" (clip-path reveal) | "scale"
+ * Scroll-triggered reveal. Fires once, respects reduced motion.
+ * variant: "fade" (default fade + rise) | "mask" (slides up out of a clip)
+ * | "scale"
+ *
+ * The motion itself is a CSS transition (see .reveal in globals.css) on
+ * transform and opacity, so it runs on the compositor; JavaScript only
+ * flags the element once it's in view.
  */
 export default function ScrollReveal({
   children,
@@ -18,56 +42,29 @@ export default function ScrollReveal({
   duration = 0.9,
   amount = 0.3,
   className = "",
-  once = true,
 }) {
-  const prefersReduced = useSafeReducedMotion();
+  const ref = useRef(null);
 
-  // Mask reveal uses an overflow-hidden clip container + inner translateY,
-  // the same proven technique as the hero line reveal. Detection is watched
-  // on the untransformed outer element rather than via whileInView directly
-  // on the sliding child — a large self-transform (y: 100%) shifts the
-  // element's own measured position enough to break its own intersection
-  // trigger, so `animate` driven by a separately-observed ref is used instead.
-  const maskRef = useRef(null);
-  const maskInView = useInView(maskRef, { once, amount });
+  useEffect(() => {
+    const el = ref.current;
+    if (el) return observe(el, amount);
+  }, [amount]);
 
+  const style = { "--reveal-y": `${y}px`, "--reveal-delay": `${delay}s`, "--reveal-duration": `${duration}s` };
+
+  // Mask: the in-view check is on the clip container, which never moves;
+  // the content slides up inside it
   if (variant === "mask") {
     return (
-      <div ref={maskRef} className={`overflow-hidden ${className}`}>
-        <motion.div
-          initial={prefersReduced ? false : { y: "100%", opacity: 0 }}
-          animate={prefersReduced || maskInView ? { y: "0%", opacity: 1 } : undefined}
-          transition={{ duration, delay, ease: EASE_OUT }}
-        >
-          {children}
-        </motion.div>
+      <div ref={ref} className={`reveal-mask overflow-hidden ${className}`} style={style}>
+        <div className="reveal-mask-inner">{children}</div>
       </div>
     );
   }
 
-  const MotionTag = motion[Tag];
-  const variants = {
-    fade: {
-      hidden: { opacity: 0, y },
-      visible: { opacity: 1, y: 0 },
-    },
-    scale: {
-      hidden: { opacity: 0, scale: 0.94 },
-      visible: { opacity: 1, scale: 1 },
-    },
-  };
-
   return (
-    <MotionTag
-      className={className}
-      initial={prefersReduced ? false : "hidden"}
-      whileInView={prefersReduced ? undefined : "visible"}
-      animate={prefersReduced ? "visible" : undefined}
-      viewport={{ once, amount }}
-      variants={variants[variant]}
-      transition={{ duration, delay, ease: EASE_OUT }}
-    >
+    <Tag ref={ref} className={`reveal ${variant === "scale" ? "reveal--scale" : ""} ${className}`} style={style}>
       {children}
-    </MotionTag>
+    </Tag>
   );
 }

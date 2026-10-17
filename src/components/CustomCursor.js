@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { motion, useMotionValue, useReducedMotion, AnimatePresence } from "framer-motion";
 import { useCursor } from "@/lib/cursor-context";
 import { useFinePointer } from "@/hooks/useFinePointer";
@@ -25,6 +26,7 @@ export default function CustomCursor() {
   const active = isFine && !prefersReduced;
   const { variant, label, setCursor, resetCursor } = useCursor();
   const [pressed, setPressed] = useState(false);
+  const pathname = usePathname();
 
   const x = useMotionValue(-100);
   const y = useMotionValue(-100);
@@ -83,15 +85,21 @@ export default function CustomCursor() {
     };
   }, [active, x, y, setCursor, resetCursor]);
 
+  // The link that was hovered is gone after a page change and never fires
+  // mouseout — drop its hover state / label
+  useEffect(() => {
+    resetCursor();
+  }, [pathname, resetCursor]);
+
   if (!active) return null;
 
   const hasLabel = Boolean(label);
-  // Unknown variants (e.g. "expand" from MagneticButton) read as hover
+  // Unknown variants read as hover
   const shape = hasLabel ? SHAPES.label : (SHAPES[variant] ?? SHAPES.hover);
 
   return (
     <motion.div
-      className="pointer-events-none fixed top-0 left-0 z-80 flex items-center justify-center mix-blend-difference bg-paper"
+      className="pointer-events-none fixed top-0 left-0 z-80 flex items-center justify-center mix-blend-difference bg-paper theme-dark"
       style={{ x: springX, y: springY, translateX: "-50%", translateY: "-50%" }}
       initial={false}
       animate={{ ...shape, scale: pressed ? 0.8 : 1 }}

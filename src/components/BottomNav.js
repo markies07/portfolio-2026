@@ -5,7 +5,6 @@ import {
   motion,
   AnimatePresence,
   animate,
-  useAnimationControls,
   useMotionValue,
   useTransform,
 } from "framer-motion";
@@ -13,6 +12,7 @@ import { NAV_LINKS } from "@/lib/content";
 import { EASE_OUT, heroTimeline } from "@/lib/motion";
 import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 import { useBackdropTone } from "@/hooks/useBackdropTone";
+import { useTheme } from "@/hooks/useTheme";
 import { useIntroDone } from "@/lib/intro-context";
 import { createDisplacementMap, supportsBackdropRefraction } from "@/lib/liquid-glass";
 
@@ -50,6 +50,21 @@ const ICONS = {
   ),
 };
 
+// Theme toggle shows the mode it switches *to*
+const THEME_ICONS = {
+  light: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <circle cx="12" cy="12" r="4" />
+      <path strokeLinecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </svg>
+  ),
+  dark: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20.35 15.35A9 9 0 018.65 3.65 9 9 0 1020.35 15.35z" />
+    </svg>
+  ),
+};
+
 export default function BottomNav() {
   const prefersReduced = useSafeReducedMotion();
   const introDone = useIntroDone();
@@ -79,11 +94,13 @@ export default function BottomNav() {
   const width = useTransform([left, right], ([l, r]) => Math.max(r - l, itemSize.current));
   // Stretching thins the drop a little, like surface tension
   const scaleY = useTransform(width, (w) => 1 - (Math.min(Math.max(w - itemSize.current, 0), 80) / 80) * 0.2);
-  const jelly = useAnimationControls();
 
   // Light or dark content behind the bar — flips the tint (icons adapt
   // individually through data-glass-sample)
   const tone = useBackdropTone(trackRef);
+  const { theme, toggle: toggleTheme } = useTheme();
+  const nextTheme = theme === "light" ? "dark" : "light";
+  const themeLabel = nextTheme === "light" ? "Light mode" : "Dark mode";
   // iOS-style: the selection swells into a clear lens while it moves or is touched
   const lens = !prefersReduced && (pressed || lifted);
 
@@ -150,14 +167,19 @@ export default function BottomNav() {
       animate(left, target.l, movingRight ? TRAIL : LEAD),
       animate(right, target.r, movingRight ? LEAD : TRAIL),
     ];
-    // The whole glass capsule wobbles as the drop passes through it
-    jelly.start({
-      scaleX: [1, 1.04, 0.99, 1],
-      scaleY: [1, 0.96, 1.01, 1],
-      transition: { duration: 0.75, ease: "easeOut" },
-    });
+    // The whole glass capsule wobbles as the drop passes through it — a
+    // native (WAAPI) animation, so it runs on the compositor, not in JS
+    trackRef.current?.animate(
+      [
+        { transform: "scale(1, 1)" },
+        { transform: "scale(1.04, 0.96)" },
+        { transform: "scale(0.99, 1.01)" },
+        { transform: "scale(1, 1)" },
+      ],
+      { duration: 750, easing: "ease-out" }
+    );
     return () => controls.forEach((c) => c.stop());
-  }, [active, prefersReduced, left, right, jelly, measure]);
+  }, [active, prefersReduced, left, right, measure]);
 
   /* Keep the droplet glued to its item when the layout changes size, and
      rebuild the refraction map to match the bar */
@@ -239,11 +261,12 @@ export default function BottomNav() {
         </svg>
       )}
 
-      <motion.div
+      <div
         ref={trackRef}
-        animate={jelly}
         data-tone={tone}
-        className="liquid-glass pointer-events-auto relative flex items-center gap-1.5 rounded-full p-1.5"
+        // Click-through except for its links and buttons: the backdrop sampler
+        // hit-tests the page through the bar's padding (see useBackdropTone)
+        className="liquid-glass relative flex items-center gap-1.5 rounded-full p-1.5"
       >
         {/* Glass stack: lens (blur/refraction), tint, specular rim */}
         <span
@@ -251,7 +274,8 @@ export default function BottomNav() {
           className="liquid-glass__layer liquid-glass__refraction"
           style={glass ? { backdropFilter: `url(#${GLASS_FILTER_ID})` } : undefined}
         />
-        <span aria-hidden="true" className="liquid-glass__layer liquid-glass__tint" />
+        <span aria-hidden="true" className="liquid-glass__layer liquid-glass__tint liquid-glass__tint--dark" />
+        <span aria-hidden="true" className="liquid-glass__layer liquid-glass__tint liquid-glass__tint--light" />
         <span aria-hidden="true" className="liquid-glass__layer liquid-glass__rim z-20" />
 
         {/* Liquid droplet — sits under the icons and travels between them,
@@ -318,7 +342,7 @@ export default function BottomNav() {
                 onFocus={() => setHovered(id)}
                 onBlur={() => setHovered(null)}
                 data-glass-sample
-                className="liquid-glass__item relative flex h-10 w-10 items-center justify-center rounded-full"
+                className="liquid-glass__item pointer-events-auto relative flex h-10 w-10 items-center justify-center rounded-full"
                 aria-label={link.label}
                 aria-current={isActive ? "true" : undefined}
               >
@@ -353,6 +377,52 @@ export default function BottomNav() {
         {/* Glass Divider */}
         <div data-glass-sample className="liquid-glass__divider relative h-4 w-px mx-0.5" />
 
+        {/* Light / dark toggle — the new theme grows out of this button */}
+        <div className="relative z-10 flex items-center justify-center">
+          <AnimatePresence>
+            {hovered === "theme" && (
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.85 }}
+                animate={{ opacity: 1, y: -6, scale: 1 }}
+                exit={{ opacity: 0, y: 4, scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 500, damping: 24 }}
+                className="absolute bottom-full mb-2 pointer-events-none rounded-xl border border-white/20 bg-[#1a1a1e]/90 backdrop-blur-md px-3 py-1 font-mono text-[10px] uppercase tracking-[0.15em] text-white shadow-[0_8px_24px_rgba(0,0,0,0.6)] whitespace-nowrap z-50"
+              >
+                {themeLabel}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 border-4 border-transparent border-t-[#1a1a1e]/90" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button
+            type="button"
+            onClick={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              toggleTheme({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+            }}
+            onPointerEnter={() => setHovered("theme")}
+            onPointerLeave={() => setHovered(null)}
+            onFocus={() => setHovered("theme")}
+            onBlur={() => setHovered(null)}
+            data-glass-sample
+            className="liquid-glass__item pointer-events-auto relative flex h-10 w-10 items-center justify-center rounded-full"
+            aria-label={`Switch to ${nextTheme} mode`}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={nextTheme}
+                initial={{ opacity: 0, rotate: -90, scale: 0.5 }}
+                animate={{ opacity: 1, rotate: 0, scale: hovered === "theme" ? 1.3 : 1 }}
+                exit={{ opacity: 0, rotate: 90, scale: 0.5 }}
+                transition={{ type: "spring", stiffness: 420, damping: 18 }}
+                className="relative z-10 flex"
+              >
+                {THEME_ICONS[nextTheme]}
+              </motion.span>
+            </AnimatePresence>
+          </button>
+        </div>
+
         {/* Glass CTA Button "Let's Talk" */}
         <div className="relative z-10 flex items-center justify-center">
           <AnimatePresence>
@@ -362,7 +432,7 @@ export default function BottomNav() {
                 animate={{ opacity: 1, y: -6, scale: 1 }}
                 exit={{ opacity: 0, y: 4, scale: 0.9 }}
                 transition={{ type: "spring", stiffness: 500, damping: 24 }}
-                className="absolute bottom-full mb-2 pointer-events-none rounded-xl border border-white/20 bg-white px-3 py-1 font-mono text-[10px] uppercase tracking-[0.15em] text-ink shadow-lg whitespace-nowrap z-50"
+                className="absolute bottom-full mb-2 pointer-events-none rounded-xl border border-white/20 bg-white px-3 py-1 font-mono text-[10px] uppercase tracking-[0.15em] text-[#0a0a0a] shadow-lg whitespace-nowrap z-50"
               >
                 Let&apos;s Talk
                 <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 border-4 border-transparent border-t-white" />
@@ -379,7 +449,7 @@ export default function BottomNav() {
             onPointerEnter={() => setHovered("cta")}
             onPointerLeave={() => setHovered(null)}
             data-glass-sample
-            className="liquid-glass__cta group relative flex h-10 items-center gap-2 rounded-full px-4 font-mono text-[10px] uppercase tracking-[0.18em]"
+            className="liquid-glass__cta pointer-events-auto group relative flex h-10 items-center gap-2 rounded-full px-4 font-mono text-[10px] uppercase tracking-[0.18em]"
           >
             <span className="hidden sm:inline">Let&apos;s Talk</span>
             <svg
@@ -393,7 +463,7 @@ export default function BottomNav() {
             </svg>
           </motion.a>
         </div>
-      </motion.div>
+      </div>
     </motion.nav>
   );
 }

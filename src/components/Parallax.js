@@ -1,15 +1,13 @@
-"use client";
-
-import { useEffect, useRef } from "react";
-import { motion, useMotionValue, useScroll, useTransform } from "framer-motion";
-import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
-
 /**
  * Scroll-linked parallax. While the element travels through the viewport it
  * drifts from `from` px to `to` px on top of normal scrolling (0 at the
  * middle if they're symmetrical). Positive-to-negative reads as "moves
  * faster than the page"; negative-to-positive as "lags behind".
  * Offsets are scaled down on small screens so nothing crowds the layout.
+ *
+ * Pure CSS (a scroll-driven animation, see .parallax in globals.css): it runs
+ * on the compositor and costs no JavaScript while scrolling. Any box between
+ * this and the page must not be overflow: hidden — use overflow: clip.
  */
 export default function Parallax({
   children,
@@ -19,31 +17,13 @@ export default function Parallax({
   mobileFactor = 0.4,
   className = "",
 }) {
-  const ref = useRef(null);
-  const prefersReduced = useSafeReducedMotion();
-  const factor = useMotionValue(1);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
-
-  useEffect(() => {
-    const query = window.matchMedia("(min-width: 768px)");
-    const apply = () => factor.set(query.matches ? 1 : mobileFactor);
-    apply();
-    query.addEventListener("change", apply);
-    return () => query.removeEventListener("change", apply);
-  }, [factor, mobileFactor]);
-
-  const value = useTransform([scrollYProgress, factor], ([p, f]) => (from + (to - from) * p) * f);
-
   return (
-    <motion.div
-      ref={ref}
-      className={className}
-      style={prefersReduced ? undefined : axis === "x" ? { x: value } : { y: value }}
+    <div
+      className={`parallax ${className}`}
+      data-axis={axis === "x" ? "x" : undefined}
+      style={{ "--px-from": `${from}px`, "--px-to": `${to}px`, "--px-mobile": mobileFactor }}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

@@ -1,5 +1,17 @@
 // Centralized site content. Edit here — components stay presentation-only.
 
+// Images are imported rather than referenced as "/projects/…"
+// strings: Next.js then serves each one at a URL containing a hash of the
+// file, so replacing an image (even under the same name) shows up straight
+// away instead of the old optimised copy being served from cache.
+import homepawsImage from "../../public/projects/homepaws.jpg";
+import homehubImage from "../../public/projects/homehub.png";
+import clockinImage from "../../public/projects/clockin.png";
+import dubaiparkingImage from "../../public/projects/dubaiparking.jpg";
+import portraitImage from "../../public/images/mark-cutout.png";
+import portraitLightImage from "../../public/images/mark-cutout-light.png";
+import { SCREENSHOTS } from "./screenshots";
+
 export const PERSON = {
   name: "MARK CHRISTIAN NAVAL",
   firstLine: "MARK CHRISTIAN NAVAL",
@@ -14,7 +26,11 @@ export const PERSON = {
   availability: "Available for select projects",
   // Background-removed cut-out (transparent PNG) — the hero stands it in
   // front of the name. The untouched original is /images/Mark.png.
-  portrait: "/images/mark-cutout.png",
+  portrait: portraitImage,
+  // Same cut-out for the light theme: the rough, black-tinted hair edge is
+  // pulled in and feathered, and the fade-to-black at the bottom becomes a
+  // fade to transparent
+  portraitLight: portraitLightImage,
 };
 
 // Pre-filled draft when someone clicks your email address (opens Gmail).
@@ -93,9 +109,13 @@ export const SERVICES = [
   },
 ];
 
-// The Work section shows `description` (short) on each card. `details` is
-// the full write-up for each project's own page (not built yet), along with
-// `links.live` for its "Visit website" button.
+// The Work section shows `description` (short) on each card; each card opens
+// the project's own page (/work/<slug>), which shows `details`, the
+// "Go to website" / "View on GitHub" buttons (`links`), and `screenshots`.
+//
+// Screenshots are listed in ./screenshots.js. Every third one spans the
+// full width, the rest sit two to a row. A project with none shows
+// placeholder frames.
 export const PROJECTS = [
   {
     slug: "homepaws",
@@ -106,11 +126,12 @@ export const PROJECTS = [
     description:
       "A pet rehoming platform for General Trias, Cavite — owners list pets, adopters apply, and every adoption is tracked from meet-up to signed contract.",
     stack: ["React", "Firebase", "Redux", "Tailwind CSS"],
-    image: "/projects/homepaws.jpg",
+    image: homepawsImage,
     links: {
       live: "https://paws-ae1eb.web.app",
       repo: "https://github.com/markies07/HomePaws",
     },
+    screenshots: SCREENSHOTS.homepaws,
     details: {
       overview:
         "HomePaws is my capstone project: an online rehoming information system that helps pets in General Trias, Cavite find safe new homes. Instead of scattered social media posts, owners and adopters get one trusted place to list pets, apply, talk, and complete an adoption — with an admin team keeping the community safe.",
@@ -136,14 +157,15 @@ export const PROJECTS = [
     description:
       "An apartment management platform for owners, staff, and tenants — with digital rent payments, lease tracking, cash-flow analytics, and real-time chat.",
     stack: ["Next.js", "TypeScript", "Firebase", "Tailwind CSS"],
-    image: "/projects/homehub.jpg",
+    image: homehubImage,
     links: {
       live: "https://home-hub2026.vercel.app",
       repo: "https://github.com/markies07/HomeHub2026",
     },
+    screenshots: SCREENSHOTS.homehub,
     details: {
       overview:
-        "HomeHub is a full rental and property management platform for apartment owners, property staff, and residents in Cavite. It rebuilds a traditional PHP/MySQL property system as a modern, real-time cloud app — one place to list units, manage tenants, collect rent, and stay in touch.",
+        "HomeHub is a full rental and property management platform for apartment owners, property staff, and residents in Cavite. It gives them one place to list units, manage tenants, collect rent, and stay in touch — with every payment, lease, and message kept up to date in real time.",
       features: [
         "Public unit directory — a featured residence showcase, photo galleries, and filtering by availability, price, and room setup, with direct rental inquiries.",
         "Owner dashboard — gross earnings, monthly collections, and a 12-month cash-flow chart comparing income, expenses, and net profit.",
@@ -166,11 +188,12 @@ export const PROJECTS = [
     description:
       "A personal time and pay tracker that turns every clock-in into accurate earnings — handling lates, overtime, holidays, and payroll cutoffs automatically.",
     stack: ["Next.js", "TypeScript", "Firebase", "Tailwind CSS"],
-    image: "/projects/clockin.png",
+    image: clockinImage,
     links: {
       live: "https://clockin-bymark.vercel.app",
       repo: "https://github.com/markies07/Clockin",
     },
+    screenshots: SCREENSHOTS.clockin,
     details: {
       overview:
         "ClockIn is a personal attendance and earnings tracker for anyone paid by the day or by the hour. Clock in and out with one tap, and it works out exactly what you've earned — applying your schedule, overtime rules, holidays, and payroll cutoffs for you.",
@@ -181,7 +204,7 @@ export const PROJECTS = [
         "Rest days and holidays — rest-day overtime detected automatically, and holiday pay multipliers applied.",
         "Payroll — semi-monthly or custom cutoffs and paydays, pay slips showing gross pay, deductions, and net pay, and periods marked as paid.",
         "Reports — weekly hours, monthly summaries, a salary breakdown, attendance streaks, and CSV export.",
-        "Built for daily use — fixed or flexible schedules, Google sign-in, dark mode, a privacy toggle that hides amounts, and a mobile-first layout.",
+        "Built for daily use — fixed or flexible schedules, Google sign-in, a privacy toggle that hides amounts, and a mobile-first layout.",
       ],
       stack: ["Next.js", "React", "TypeScript", "Firebase (Auth, Firestore)", "Tailwind CSS", "shadcn/ui", "Recharts", "date-fns"],
     },
@@ -194,28 +217,26 @@ export const PROJECTS = [
     category: "Parking Management System",
     description:
       "A real-time parking system for a Dubai car park — drivers check free bays before they set off, while attendants and the owner run the lot from a staff portal.",
-    // Written from the live site; the repo is private. Only Next.js is
-    // confirmed — add the rest of the stack here.
-    stack: ["Next.js"],
-    image: "/projects/dubaiparking.jpg",
+    stack: ["Next.js", "TypeScript", "Firebase", "Tailwind CSS"],
+    image: dubaiparkingImage,
     links: {
-      live: "https://aims-bycreservices.vercel.app",
-      repo: null, // private
+      live: "https://dubai-parking.vercel.app",
+      repo: "https://github.com/markies07/AIMS",
     },
+    screenshots: SCREENSHOTS["dubai-parking"],
     details: {
       overview:
         "Dubai Parking is a real-time parking system for a car park in Dubai. Drivers can see exactly how many bays are free before they set off, with clear rates and directions, while parking attendants and the owner manage the facility from a secure staff portal.",
       features: [
-        "Live availability — free, taken, reserved, and out-of-service counts that update as vehicles arrive and leave.",
+        "Live availability — free, taken, and out-of-service counts that update as vehicles arrive and leave.",
         "Interactive facility map — a level-by-level, zone-by-zone layout showing the status of every car and motorcycle bay.",
         "Busy-hours guide — typical occupancy by hour, so drivers can plan when to come.",
         "Transparent pricing — separate car and motorcycle rates with a free grace period, hourly rounding, and a daily maximum.",
         "Itemized receipts — every receipt shows the full fee calculation.",
-        "Reserved bays — spaces can be held for a driver who's on the way.",
         "Location and directions — address, opening hours, and one-tap Google Maps directions.",
         "Staff portal — a secure sign-in for parking attendants and the owner.",
       ],
-      stack: ["Next.js", "Vercel"],
+      stack: ["Next.js 16 (App Router)", "React 19", "TypeScript", "Firebase (Auth, Firestore)", "Tailwind CSS v4", "Zod", "next-intl", "Vercel"],
     },
   },
 ];

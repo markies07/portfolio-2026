@@ -1,34 +1,18 @@
-"use client";
-
-import { useRef } from "react";
 import Image from "next/image";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
+import Link from "next/link";
 import ScrollReveal from "./ScrollReveal";
-import MagneticButton from "./MagneticButton";
 import ArrowIcon from "./ArrowIcon";
 
 /**
  * Gallery frame: a plain, square-cornered rectangle. Project artwork drifts
- * slightly inside the frame as the page scrolls (parallax) and zooms gently
- * on hover.
+ * slightly inside the frame as the page scrolls (a CSS scroll-driven drift,
+ * see .drift in globals.css) and zooms gently on hover.
  */
 function GalleryImage({ project }) {
-  const ref = useRef(null);
-  const prefersReduced = useSafeReducedMotion();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], ["-12%", "12%"]);
-
   return (
-    <div
-      ref={ref}
-      className="relative aspect-4/3 w-full overflow-hidden border border-paper/10 bg-paper/4"
-    >
+    <div className="drift-frame relative aspect-4/3 w-full overflow-clip border border-paper/10 bg-paper/4">
       {project.image && (
-        <motion.div
-          className="absolute -inset-y-[18%] inset-x-0"
-          style={prefersReduced ? undefined : { y }}
-        >
+        <div className="drift absolute -inset-y-[18%] inset-x-0">
           <div className="relative h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]">
             <Image
               src={project.image}
@@ -39,18 +23,24 @@ function GalleryImage({ project }) {
               sizes="(max-width: 768px) 100vw, 50vw"
             />
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );
 }
 
 export default function ProjectShowcase({ project, delay = 0 }) {
+  const href = `/work/${project.slug}`;
+
   // Column-level parallax lives in Work — per-card offsets pulled cards in
   // the same column apart as they scrolled through at different progress
   return (
     <ScrollReveal className="group" delay={delay} y={40} amount={0.2}>
-      <GalleryImage project={project} />
+      {/* Same destination as the "View Project" button below, so it's kept
+          out of the tab order to avoid a duplicate stop */}
+      <Link href={href} tabIndex={-1} aria-hidden="true" data-cursor-label="View" className="block">
+        <GalleryImage project={project} />
+      </Link>
 
       <div className="mt-6 flex items-center justify-between gap-4 font-mono text-[11px] uppercase tracking-[0.18em] text-paper/45">
         <span>
@@ -74,24 +64,14 @@ export default function ProjectShowcase({ project, delay = 0 }) {
           ))}
         </ul>
 
-        {/* The repo when it's public, otherwise the live site */}
-        {project.links?.repo || project.links?.live ? (
-          <MagneticButton
-            as="a"
-            href={project.links.repo || project.links.live}
-            target="_blank"
-            rel="noopener noreferrer"
-            cursorLabel="View"
-            className="group/cta inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-paper"
-          >
-            {project.links.repo ? "View on GitHub" : "Visit website"}
-            <ArrowIcon className="h-4 w-4 transition-transform duration-300 group-hover/cta:translate-x-1" />
-          </MagneticButton>
-        ) : (
-          <span className="inline-flex items-center gap-2 rounded-full border border-paper/20 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.2em] text-paper/50">
-            Private project
-          </span>
-        )}
+        <Link
+          href={href}
+          data-cursor-label="View"
+          className="group/cta inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-paper"
+        >
+          View Project
+          <ArrowIcon className="h-4 w-4 transition-transform duration-300 group-hover/cta:translate-x-1" />
+        </Link>
       </div>
     </ScrollReveal>
   );

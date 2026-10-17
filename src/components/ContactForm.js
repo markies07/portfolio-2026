@@ -6,7 +6,7 @@ import { EASE_OUT } from "@/lib/motion";
 import { LIMITS } from "@/lib/contact-email";
 
 const fieldShell =
-  "group relative bg-[#141414] transition-colors duration-300 hover:bg-[#181818] focus-within:bg-[#1c1c1c]";
+  "group relative bg-(--color-field) transition-colors duration-300 hover:bg-(--color-field-hover) focus-within:bg-(--color-field-focus)";
 const labelClass =
   "absolute top-5 left-5 sm:left-6 font-mono text-[11px] sm:text-xs uppercase tracking-[0.2em] text-paper/60 select-none pointer-events-none transition-colors duration-300 group-focus-within:text-paper";
 const inputClass =
@@ -100,7 +100,7 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <div className="overflow-hidden rounded-2xl border border-paper/15 bg-paper/12 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)]">
+      <div className="overflow-hidden rounded-2xl border border-paper/15 bg-paper/12 shadow-[0_30px_80px_-40px_var(--color-shadow)]">
         {/* Name + Email side by side on wider screens; 1px gaps act as dividers */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-px">
           {fields.map(({ id, key, label, ...input }) => (
@@ -152,10 +152,10 @@ export default function ContactForm() {
         />
 
         {/* Footer row: char count / status + submit */}
-        <div className="mt-px flex items-center justify-between gap-4 bg-[#101010] px-5 sm:px-6 py-4">
+        <div className="mt-px flex items-center justify-between gap-4 bg-(--color-field-bar) px-5 sm:px-6 py-4">
           <span className="font-mono text-xs text-paper/45 tabular-nums" aria-live="polite">
             {status === "sent" ? (
-              <span className="text-emerald-400">Thanks — I&apos;ll get back to you soon.</span>
+              <span className="text-emerald-400 light:text-emerald-700">Thanks — I&apos;ll get back to you soon.</span>
             ) : (
               `${message.length} characters`
             )}

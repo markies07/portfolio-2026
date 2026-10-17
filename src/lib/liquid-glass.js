@@ -8,6 +8,10 @@
 
 export function supportsBackdropRefraction() {
   if (typeof window === "undefined") return false;
+  // Touch devices get the plain frosted lens: re-running an SVG
+  // displacement over the backdrop on every scroll frame is heavy for phone
+  // GPUs, and on a phone-sized bar the bent rim is barely visible anyway
+  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return false;
   const ua = navigator.userAgent;
   // Every iOS browser is WebKit underneath, whatever its name says
   if (/iPhone|iPad|iPod|Firefox|FxiOS/.test(ua)) return false;

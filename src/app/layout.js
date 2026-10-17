@@ -4,6 +4,7 @@ import "./globals.css";
 import { CursorProvider } from "@/lib/cursor-context";
 import { IntroProvider } from "@/lib/intro-context";
 import { INTRO_GATE_SCRIPT } from "@/lib/intro";
+import { THEME_SCRIPT } from "@/lib/theme";
 import IntroTerminal from "@/components/IntroTerminal";
 import CustomCursor from "@/components/CustomCursor";
 import SmoothScroll from "@/components/SmoothScroll";
@@ -51,8 +52,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    // suppressHydrationWarning: the intro gate script sets data-intro on
-    // <html> before React hydrates
+    // suppressHydrationWarning: the theme and intro gate scripts set
+    // data-theme / data-intro on <html> before React hydrates
     <html
       lang="en"
       suppressHydrationWarning
@@ -62,10 +63,12 @@ export default function RootLayout({ children }) {
         {/* Plain inline script (not next/script, which defers inline code to
             a queue) so it runs during parsing, before the terminal below it
             can paint */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: INTRO_GATE_SCRIPT }} />
-        {/* Without JS the terminal could never finish — skip it entirely */}
+        {/* Without JS the terminal could never finish — skip it entirely —
+            and nothing would ever flag scroll reveals as in view */}
         <noscript>
-          <style>{`.intro-overlay{display:none}html{overflow:auto}`}</style>
+          <style>{`.intro-overlay{display:none}html{overflow:auto}.reveal,.reveal-mask-inner{opacity:1!important;transform:none!important}`}</style>
         </noscript>
         <IntroProvider>
           <CursorProvider>

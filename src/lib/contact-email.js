@@ -42,7 +42,7 @@ export function buildContactEmail({ name, email, message }, { site = "your portf
   const e = escapeHtml(email);
   const m = escapeHtml(message);
 
-  const subject = `Portfolio inquiry from ${name}`;
+  const subject = `${name} sent you an email`;
 
   const text = [
     `New message from your portfolio contact form`,

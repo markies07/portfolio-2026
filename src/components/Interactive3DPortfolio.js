@@ -2,17 +2,19 @@
 
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { ContactShadows } from "@react-three/drei";
+import { PerformanceMonitor } from "@react-three/drei";
 import * as THREE from "three";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import fontData from "../../public/fonts/helvetiker_bold.typeface.json";
+import { useTheme } from "@/hooks/useTheme";
 
 /* ══════════════════════════════════════════════════════════════════════════════
    STYLING & COLORS — Premium 3D Typography
    ══════════════════════════════════════════════════════════════════════════════ */
 const COLORS = {
   letterColor: "#f8fafc",
+  letterColorLight: "#2a2a2e", // graphite on the light theme, where white would vanish
   keyLight: "#ffffff",
   fillLight: "#e2e8f0",
   rimLight: "#8b5cf6", // Subtle violet rim accent to match the portfolio theme
@@ -67,7 +69,9 @@ function getLetters() {
  * real camera and returns the world-space nudge that puts its on-screen
  * bounding box in the exact centre.
  */
+let centeringCache = null;
 function computeCenteringOffset() {
+  if (centeringCache) return centeringCache;
   const { mGeometry, cGeometry } = getLetters();
 
   const camera = new THREE.PerspectiveCamera(CAMERA.fov, 1, 0.1, 50);
@@ -115,18 +119,21 @@ function computeCenteringOffset() {
     offset.y -= ((minY + maxY) / 2) * worldPerNdc;
   }
 
+  centeringCache = offset;
   return offset;
 }
 
 function MonogramMC() {
   const { mGeometry, cGeometry } = useMemo(() => getLetters(), []);
+  const { theme } = useTheme();
+  const letterColor = theme === "light" ? COLORS.letterColorLight : COLORS.letterColor;
 
   return (
     <group scale={[LETTER_SCALE, LETTER_SCALE, LETTER_SCALE]}>
       {/* Letter M */}
       <mesh geometry={mGeometry} position={[LETTER_X.M, 0, 0]}>
         <meshStandardMaterial
-          color={COLORS.letterColor}
+          color={letterColor}
           roughness={0.22}
           metalness={0.12}
         />
@@ -135,7 +142,7 @@ function MonogramMC() {
       {/* Letter C */}
       <mesh geometry={cGeometry} position={[LETTER_X.C, 0, 0]}>
         <meshStandardMaterial
-          color={COLORS.letterColor}
+          color={letterColor}
           roughness={0.22}
           metalness={0.12}
         />
@@ -179,7 +186,7 @@ const DRAG_LERP = 0.14;
 const RESET_LERP = 0.05;
 
 function Scene() {
-  const centerOffset = useMemo(() => computeCenteringOffset(), []);
+  const centerOffset = computeCenteringOffset();
   const mainGroupRef = useRef();
   const floatGroupRef = useRef();
 
@@ -191,6 +198,10 @@ function Scene() {
 
   const dragStart = useRef({ x: 0, y: 0 });
   const rotationStart = useRef({ x: 0, y: 0 });
+  // Touch drags are held undecided until the finger has clearly moved one
+  // way: up/down hands the gesture back to the page (scrolling), sideways
+  // turns the model. Mouse drags rotate straight away.
+  const touchIntent = useRef(null); // null | "pending" | "rotate"
 
   /* ── Drag Handlers (Natural / Non-Inverted) ── */
   const onPointerDown = useCallback(
@@ -199,7 +210,8 @@ function Scene() {
       isDraggingRef.current = true;
       dragStart.current = { x: e.clientX, y: e.clientY };
       rotationStart.current = { ...targetRotation.current };
-      document.body.style.cursor = "grabbing";
+      touchIntent.current = e.pointerType === "touch" ? "pending" : null;
+      if (e.pointerType !== "touch") document.body.style.cursor = "grabbing";
     },
     []
   );
@@ -209,6 +221,19 @@ function Scene() {
       if (!isDraggingRef.current) return;
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      if (touchIntent.current === "pending") {
+        const moveX = Math.abs(clientX - dragStart.current.x);
+        const moveY = Math.abs(clientY - dragStart.current.y);
+        if (Math.max(moveX, moveY) < 8) return;
+        if (moveY > moveX) {
+          // A scroll, not a drag — let the page have it
+          isDraggingRef.current = false;
+          touchIntent.current = null;
+          return;
+        }
+        touchIntent.current = "rotate";
+      }
 
       // Natural drag: right rotates right, down tilts down
       const dx = (clientX - dragStart.current.x) * 0.005;
@@ -223,6 +248,7 @@ function Scene() {
     const handleUp = () => {
       if (isDraggingRef.current) {
         isDraggingRef.current = false;
+        touchIntent.current = null;
         targetRotation.current = { x: 0, y: 0 };
         document.body.style.cursor = isHovered ? "grab" : "";
       }
@@ -230,14 +256,17 @@ function Scene() {
 
     window.addEventListener("mousemove", handleMove);
     window.addEventListener("mouseup", handleUp);
-    window.addEventListener("touchmove", handleMove, { passive: false });
+    // Passive: the page's own scrolling is never blocked from here
+    window.addEventListener("touchmove", handleMove, { passive: true });
     window.addEventListener("touchend", handleUp);
+    window.addEventListener("touchcancel", handleUp);
 
     return () => {
       window.removeEventListener("mousemove", handleMove);
       window.removeEventListener("mouseup", handleUp);
       window.removeEventListener("touchmove", handleMove);
       window.removeEventListener("touchend", handleUp);
+      window.removeEventListener("touchcancel", handleUp);
     };
   }, [isHovered]);
 
@@ -309,17 +338,6 @@ function Scene() {
         </group>
       </group>
       </group>
-
-      {/* Soft Contact Shadow beneath floating letters */}
-      <ContactShadows
-        position={[0, -0.92, 0]}
-        opacity={0.35}
-        scale={4.0}
-        blur={2.5}
-        far={3}
-        frames={1}
-        color="#000000"
-      />
     </>
   );
 }
@@ -327,9 +345,25 @@ function Scene() {
 /* ══════════════════════════════════════════════════════════════════════════════
    CANVAS CONTAINER
    ══════════════════════════════════════════════════════════════════════════════ */
+/**
+ * Builds the letter geometry and the centring offset ahead of time (both
+ * cached), so the first render after scrolling to About doesn't stall the
+ * page. Called from an idle callback once the site has settled.
+ */
+export function warmup() {
+  computeCenteringOffset();
+}
+
+// Pixel ratio: up to 1.5 on screens that need it, dropped to 1 if the
+// device can't hold the frame rate. Phones at 2x+ are dense enough that
+// MSAA is wasted GPU time, so they render without it.
+const MAX_DPR = 1.5;
+
 export default function Interactive3DPortfolio({ className = "" }) {
   const containerRef = useRef(null);
   const [visible, setVisible] = useState(true);
+  const [dpr, setDpr] = useState(() => Math.min(MAX_DPR, Math.max(1, window.devicePixelRatio || 1)));
+  const [antialias] = useState(() => (window.devicePixelRatio || 1) < 2);
 
   // Stop the render loop entirely while the canvas is scrolled out of view
   useEffect(() => {
@@ -348,7 +382,9 @@ export default function Interactive3DPortfolio({ className = "" }) {
         width: "100%",
         height: "100%",
         minHeight: "27.5rem",
-        touchAction: "none",
+        // Vertical swipes scroll the page; horizontal ones reach the drag
+        // handler. ("none" made the whole stage a dead zone for scrolling.)
+        touchAction: "pan-y",
         background:
           "radial-gradient(circle at 50% 50%, rgba(139, 93, 232, 0.14) 0%, rgba(139, 93, 232, 0.03) 48%, transparent 72%)",
       }}
@@ -363,9 +399,9 @@ export default function Interactive3DPortfolio({ className = "" }) {
           far: 50,
         }}
         resize={{ scroll: false, debounce: { scroll: 50, resize: 0 } }}
-        dpr={[1, 1.5]}
+        dpr={dpr}
         gl={{
-          antialias: true,
+          antialias,
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.15,
           alpha: true,
@@ -378,7 +414,9 @@ export default function Interactive3DPortfolio({ className = "" }) {
           height: "100%",
         }}
       >
-        <Scene />
+        <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(Math.min(MAX_DPR, window.devicePixelRatio || 1))} flipflops={3} onFallback={() => setDpr(1)}>
+          <Scene />
+        </PerformanceMonitor>
       </Canvas>
     </div>
   );

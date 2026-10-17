@@ -120,7 +120,7 @@ export default function IntroTerminal() {
         initial={{ opacity: 0, y: 14, scale: 0.98 }}
         animate={leaving ? { opacity: 0, y: -8, scale: 0.96 } : { opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: leaving ? 0.45 : 0.5, ease: EASE_OUT }}
-        className="w-full max-w-[34rem] overflow-hidden rounded-xl border border-paper/10 bg-[#111] shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
+        className="theme-dark w-full max-w-[34rem] overflow-hidden rounded-xl border border-paper/10 bg-[#111] shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
       >
         {/* Title bar */}
         <div className="relative flex items-center gap-2 border-b border-paper/8 px-4 py-3">

@@ -4,7 +4,48 @@
   --color-ink: #0a0a0a;
   --color-paper: #f4f4f0;
   --color-accent: #d6362c;
+  /* Contact form surfaces, a step off the page background */
+  --color-field: #141414;
+  --color-field-hover: #181818;
+  --color-field-focus: #1c1c1c;
+  --color-field-bar: #101010;
+  --color-shadow: rgb(0 0 0 / 0.9);
+  --color-scrollbar: #333;
   color-scheme: dark;
+}
+
+/* Light mode (<html data-theme="light">, set by the toggle in the bottom
+   nav). Ink and paper trade places, so every bg-ink / text-paper utility
+   follows without per-component changes. */
+:root[data-theme="light"] {
+  --color-ink: #f4f4f0;
+  --color-paper: #0a0a0a;
+  --color-field: #fafaf7;
+  --color-field-hover: #ffffff;
+  --color-field-focus: #ffffff;
+  --color-field-bar: #ebebe6;
+  --color-shadow: rgb(0 0 0 / 0.2);
+  --color-scrollbar: #c4c4bd;
+  color-scheme: light;
+}
+
+/* Pins an element to the dark palette whatever the page theme (the intro
+   terminal, the inverting cursor) */
+.theme-dark {
+  --color-ink: #0a0a0a;
+  --color-paper: #f4f4f0;
+  color-scheme: dark;
+}
+
+/* `light:` utilities for the few colours that need a light-mode value */
+@custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
+
+/* Theme switch: the new theme grows out of the toggle as a circle (the
+   clip-path is animated from JS), so the default cross-fade is turned off */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 @theme inline {
@@ -98,6 +139,14 @@ textarea:focus-visible {
   background-repeat: repeat;
 }
 
+/* Touch screens: at 3% it's invisible on a phone, and a full-screen layer
+   blended over every frame is real work for a phone GPU */
+@media (hover: none) {
+  .grain-overlay {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -130,7 +179,56 @@ textarea:focus-visible {
   letter-spacing: -0.02em;
   line-height: 0.9;
   text-transform: uppercase;
-  font-size: calc(100cqw / var(--fit-em, 11.659));
+  /* Measured in JS (--fit-em); until then a close default per layout */
+  font-size: calc(100cqw / var(--fit-em, var(--fit-em-default, 11.659)));
+}
+
+.fit-line {
+  display: inline;
+}
+
+/* Phones and upright tablets: the last word drops to its own line, centred
+   under the rest, and the first line fills the width — so the name is set
+   much bigger. Keep the query in sync with STACKED_QUERY in FitName. */
+@media not all and (min-width: 640px) and (orientation: landscape) {
+  .fit-text--stack {
+    --fit-em-default: 8.06;
+  }
+
+  .fit-text--stack .fit-line {
+    display: block;
+    width: max-content;
+    margin-inline: auto;
+  }
+
+  /* The footer's fade is for the single-line name only; stacked, the name
+     is plain */
+  .fit-text--stack .text-fade-down {
+    background-image: none;
+    color: var(--color-paper);
+  }
+}
+
+/* Text that fades from full colour at the top into the page itself at the
+   bottom, so its lower edge dissolves into the background (the footer name).
+   Stops are set against where the capitals sit in each word's box — cap top
+   at ~14%, baseline at ~84% — so the fade starts at the top of the letters
+   and is fully the background colour a little above their bottom edge.
+   Applied per word: a background clipped to text on the whole line would
+   skip words while they're mid-transform. The padding stretches each
+   word's box past the glyphs so no edge is cut off. */
+.text-fade-down {
+  padding-block: 0.08em;
+  margin-block: -0.08em;
+  background-image: linear-gradient(
+    to bottom,
+    var(--color-paper) 14%,
+    color-mix(in oklab, var(--color-paper) 30%, var(--color-ink)) 50%,
+    var(--color-ink) 78%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* Terminal intro. The gate script marks <html data-intro="skip"> before first
@@ -172,9 +270,9 @@ html[data-intro="skip"] .intro-overlay {
    with the name's centre line crossing the portrait --at of the way down
    (just below the eyes). */
 .hero-portrait {
-  --w: min(118vw, 62svh);
+  --w: min(128vw, 66svh);
   --h: calc(var(--w) * 0.9359);
-  --overlap: 0.075;
+  --overlap: 0.06;
   position: relative;
   left: 50%;
   translate: -50% 0;
@@ -217,6 +315,31 @@ html[data-intro="skip"] .intro-overlay {
   background: radial-gradient(closest-side, rgb(244 244 240 / 0.075), rgb(244 244 240 / 0.02) 55%, transparent);
 }
 
+/* Light mode swaps in a cut-out cleaned for light backgrounds (the
+   original carries a dark matte around the hair and fades to black at the
+   bottom — invisible on the dark page, smudges on a light one). It needs no
+   cast shadow, which would only read as a grey halo, and its spotlight
+   becomes a white glow. */
+.hero-portrait-light {
+  display: none;
+}
+
+:root[data-theme="light"] .hero-portrait-dark {
+  display: none;
+}
+
+:root[data-theme="light"] .hero-portrait-light {
+  display: block;
+}
+
+:root[data-theme="light"] .hero-portrait-fade {
+  filter: none;
+}
+
+:root[data-theme="light"] .hero-spotlight {
+  background: radial-gradient(closest-side, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.3) 55%, transparent);
+}
+
 /* Infinite skills marquee — pure CSS, pauses on hover */
 @keyframes marquee {
   from {
@@ -232,8 +355,213 @@ html[data-intro="skip"] .intro-overlay {
   will-change: transform;
 }
 
-.marquee:hover .marquee-track {
+.marquee:hover .marquee-track,
+.marquee[data-offscreen] .marquee-track {
   animation-play-state: paused;
+}
+
+/* <ScrollReveal>: hidden until flagged data-revealed (once in view), then
+   a compositor-run transition on transform + opacity */
+.reveal,
+.reveal-mask-inner {
+  transition-property: opacity, transform;
+  transition-duration: var(--reveal-duration, 0.9s);
+  transition-delay: var(--reveal-delay, 0s);
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal:not([data-revealed]) {
+  opacity: 0;
+  transform: translate3d(0, var(--reveal-y, 28px), 0);
+}
+
+.reveal--scale:not([data-revealed]) {
+  transform: scale(0.94);
+}
+
+.reveal-mask:not([data-revealed]) .reveal-mask-inner {
+  opacity: 0;
+  transform: translate3d(0, 100%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-mask-inner {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ── Scroll-linked motion ───────────────────────────────────────────────
+   Parallax, the hero's layered drift and the About statement's word fill
+   are CSS scroll-driven animations: the browser runs them on the
+   compositor, so scrolling costs no JavaScript at all. They only animate
+   transform and opacity. Browsers without scroll timelines (and reduced
+   motion) simply get the static layout.
+
+   Gotcha: a view() timeline tracks the nearest *scroll container*, and an
+   overflow: hidden box counts as one even though it never scrolls — so
+   every box between these elements and the page uses overflow: clip. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* <Parallax>: drifts from --px-from to --px-to while crossing the
+       viewport, scaled down on small screens by --px-mobile */
+    .parallax {
+      --px-k: 1;
+      animation-name: parallax-y;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+
+    .parallax[data-axis="x"] {
+      animation-name: parallax-x;
+    }
+
+    /* Artwork drifting inside its frame; the frame (.drift-frame) is the
+       timeline, since the artwork itself is taller than the frame */
+    .drift-frame {
+      view-timeline: --drift block;
+    }
+
+    .drift {
+      animation-name: drift;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: --drift;
+      animation-range: cover 0% cover 100%;
+    }
+
+    /* Hero: as it scrolls away the name lags (sinks behind the portrait),
+       the portrait rises and grows slightly, the top row drifts down and
+       the intro fades */
+    .hero-scroll {
+      view-timeline: --hero block;
+    }
+
+    .hero-scroll-name,
+    .hero-scroll-portrait,
+    .hero-scroll-label,
+    .hero-scroll-fade {
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: --hero;
+      animation-range: exit 0% exit 100%;
+    }
+
+    .hero-scroll-name {
+      animation-name: hero-name;
+    }
+
+    .hero-scroll-portrait {
+      animation-name: hero-portrait;
+    }
+
+    .hero-scroll-label {
+      animation-name: hero-label;
+    }
+
+    .hero-scroll-fade {
+      animation-name: hero-fade;
+      animation-range: exit 0% exit 50%;
+    }
+
+    /* About statement: words light up in turn while the paragraph crosses
+       the band between 85% and 45% of the viewport */
+    .scroll-words {
+      view-timeline: --words block;
+      view-timeline-inset: 45% 15%;
+    }
+
+    .scroll-word {
+      animation-name: word-fill;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: --words;
+      animation-range: cover var(--w0) cover var(--w1);
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  .parallax {
+    --px-k: var(--px-mobile, 0.4);
+  }
+}
+
+@keyframes parallax-y {
+  from {
+    transform: translate3d(0, calc(var(--px-from) * var(--px-k)), 0);
+  }
+  to {
+    transform: translate3d(0, calc(var(--px-to) * var(--px-k)), 0);
+  }
+}
+
+@keyframes parallax-x {
+  from {
+    transform: translate3d(calc(var(--px-from) * var(--px-k)), 0, 0);
+  }
+  to {
+    transform: translate3d(calc(var(--px-to) * var(--px-k)), 0, 0);
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(0, var(--drift-from, -12%), 0);
+  }
+  to {
+    transform: translate3d(0, var(--drift-to, 12%), 0);
+  }
+}
+
+@keyframes hero-name {
+  to {
+    transform: translate3d(0, 170px, 0);
+  }
+}
+
+@keyframes hero-portrait {
+  to {
+    transform: translate3d(0, -70px, 0) scale(1.06);
+  }
+}
+
+@keyframes hero-label {
+  to {
+    transform: translate3d(0, 70px, 0);
+  }
+}
+
+@keyframes hero-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Hero "Scroll to explore" line: a light that slides down it on a loop */
+.scroll-cue {
+  animation: scroll-cue 1.8s ease-in-out infinite;
+}
+
+@keyframes scroll-cue {
+  from {
+    transform: translate3d(0, -100%, 0);
+  }
+  to {
+    transform: translate3d(0, 200%, 0);
+  }
+}
+
+@keyframes word-fill {
+  from {
+    opacity: 0.18;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Thin, editorial scrollbar */
@@ -245,7 +573,7 @@ html[data-intro="skip"] .intro-overlay {
     background: var(--color-ink);
   }
   ::-webkit-scrollbar-thumb {
-    background: #333;
+    background: var(--color-scrollbar);
     border: 2px solid var(--color-ink);
     border-radius: 999px;
   }
@@ -265,8 +593,9 @@ html[data-intro="skip"] .intro-overlay {
     --lg-inner-glow: rgba(255, 255, 255, 0.07);
     --lg-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25);
 
+    /* Switches instantly: animating a 40px blurred shadow repaints the
+       whole bar every frame, and the two tones' shadows are close anyway */
     box-shadow: var(--lg-shadow);
-    transition: box-shadow 0.5s ease;
   }
 
   .liquid-glass[data-tone="light"] {
@@ -289,9 +618,11 @@ html[data-intro="skip"] .intro-overlay {
     --lg-lens: rgba(255, 255, 255, 0.05);
     --lg-divider: rgba(255, 255, 255, 0.18);
     --lg-cta-border: rgba(255, 255, 255, 0.22);
-    --lg-cta-text: var(--color-paper);
-    --lg-cta-hover-bg: var(--color-paper);
-    --lg-cta-hover-text: var(--color-ink);
+    /* Literal colours, not ink/paper: those swap with the page theme, but
+       these follow the brightness behind the glass */
+    --lg-cta-text: #f4f4f0;
+    --lg-cta-hover-bg: #f4f4f0;
+    --lg-cta-hover-text: #0a0a0a;
   }
 
   .liquid-glass[data-tone="light"],
@@ -303,9 +634,9 @@ html[data-intro="skip"] .intro-overlay {
     --lg-lens: rgba(255, 255, 255, 0.15);
     --lg-divider: rgba(10, 10, 10, 0.15);
     --lg-cta-border: rgba(10, 10, 10, 0.18);
-    --lg-cta-text: var(--color-ink);
-    --lg-cta-hover-bg: var(--color-ink);
-    --lg-cta-hover-text: var(--color-paper);
+    --lg-cta-text: #0a0a0a;
+    --lg-cta-hover-bg: #0a0a0a;
+    --lg-cta-hover-text: #f4f4f0;
   }
 
   .liquid-glass__layer {
@@ -322,15 +653,43 @@ html[data-intro="skip"] .intro-overlay {
     backdrop-filter: blur(14px) saturate(180%);
   }
 
+  /* The tint is two layers, one per tone, cross-faded by opacity. Fading
+     the background and inner glow themselves repainted the bar on every
+     frame of every tone change; opacity runs on the compositor. */
   .liquid-glass__tint {
     background:
-      linear-gradient(180deg, var(--lg-sheen), transparent 55%),
-      var(--lg-tint);
+      linear-gradient(180deg, var(--t-sheen), transparent 55%),
+      var(--t-tint);
     box-shadow:
-      inset 0 1px 0.5px var(--lg-rim-strong),
-      inset 0 -1px 0.5px var(--lg-rim-soft),
-      inset 0 0 18px var(--lg-inner-glow);
-    transition: background 0.5s ease, box-shadow 0.5s ease;
+      inset 0 1px 0.5px var(--t-rim-strong),
+      inset 0 -1px 0.5px var(--t-rim-soft),
+      inset 0 0 18px var(--t-glow);
+    transition: opacity 0.5s ease;
+  }
+
+  .liquid-glass__tint--dark {
+    --t-tint: rgba(255, 255, 255, 0.07);
+    --t-sheen: rgba(255, 255, 255, 0.1);
+    --t-rim-strong: rgba(255, 255, 255, 0.6);
+    --t-rim-soft: rgba(255, 255, 255, 0.1);
+    --t-glow: rgba(255, 255, 255, 0.07);
+  }
+
+  .liquid-glass__tint--light {
+    --t-tint: rgba(255, 255, 255, 0.28);
+    --t-sheen: rgba(255, 255, 255, 0.35);
+    --t-rim-strong: rgba(255, 255, 255, 0.95);
+    --t-rim-soft: rgba(255, 255, 255, 0.3);
+    --t-glow: rgba(255, 255, 255, 0.25);
+    opacity: 0;
+  }
+
+  .liquid-glass[data-tone="light"] .liquid-glass__tint--dark {
+    opacity: 0;
+  }
+
+  .liquid-glass[data-tone="light"] .liquid-glass__tint--light {
+    opacity: 1;
   }
 
   /* Specular rim: bright where "light" hits the top-left and bottom-right */
