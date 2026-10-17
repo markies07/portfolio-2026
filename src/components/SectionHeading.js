@@ -27,7 +27,7 @@ export default function SectionHeading({
         )}
         <ScrollReveal delay={0.08} variant="mask">
           <h2
-            className={`mt-4 font-display font-semibold leading-[0.95] tracking-tight text-[clamp(2.75rem,7vw,7rem)] ${titleColor} ${titleClassName}`}
+            className={`mt-4 font-display font-semibold leading-[0.95] tracking-tight text-[clamp(2.25rem,9.5vw,7rem)] sm:text-[clamp(2.75rem,7vw,7rem)] ${titleColor} ${titleClassName}`}
           >
             {title}
           </h2>

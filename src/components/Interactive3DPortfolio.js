@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { PerformanceMonitor } from "@react-three/drei";
 import * as THREE from "three";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
@@ -185,6 +185,23 @@ const MAX_ROT_Y = THREE.MathUtils.degToRad(32);
 const DRAG_LERP = 0.14;
 const RESET_LERP = 0.05;
 
+// Narrowest stage (width / height) the monogram fits at full size, with
+// its margins. Narrower stages — phones — zoom the camera out to match, so
+// the letters are never cropped at the sides.
+const FIT_ASPECT = 0.95;
+
+function FitCamera() {
+  const get = useThree((state) => state.get);
+  const width = useThree((state) => state.size.width);
+  const height = useThree((state) => state.size.height);
+  useEffect(() => {
+    const { camera } = get();
+    camera.zoom = height ? Math.min(1, width / height / FIT_ASPECT) : 1;
+    camera.updateProjectionMatrix();
+  }, [get, width, height]);
+  return null;
+}
+
 function Scene() {
   const centerOffset = computeCenteringOffset();
   const mainGroupRef = useRef();
@@ -310,6 +327,7 @@ function Scene() {
 
   return (
     <>
+      <FitCamera />
       <StudioLights />
 
       {/* Centering offset sits outside the rotation so dragging still pivots on the model */}
@@ -381,7 +399,6 @@ export default function Interactive3DPortfolio({ className = "" }) {
       style={{
         width: "100%",
         height: "100%",
-        minHeight: "27.5rem",
         // Vertical swipes scroll the page; horizontal ones reach the drag
         // handler. ("none" made the whole stage a dead zone for scrolling.)
         touchAction: "pan-y",

@@ -84,8 +84,7 @@ export default function About() {
               ref={stageRef}
               data-cursor
               data-cursor-label="Drag"
-              className="rounded-xl overflow-hidden lg:-mt-16"
-              style={{ width: "100%", maxWidth: "32rem", height: "31.25rem" }}
+              className="h-[22rem] sm:h-[31.25rem] w-full max-w-[32rem] rounded-xl overflow-hidden lg:-mt-16"
             >
               {showStage && <Interactive3DPortfolio />}
             </div>
